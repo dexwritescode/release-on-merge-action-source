@@ -24,5 +24,5 @@ fn main() {
         ),
       );
       
-      env::set_var("GITHUB_OUTPUT", "The version we just incremented");
+      env::set_var("GITHUB_OUTPUT", "semver=The version we just incremented");
 }

@@ -1,0 +1,15 @@
+on: [push]
+
+jobs:
+  release_test:
+    runs-on: ubuntu-latest
+    name: A job to test the release on merge action
+    steps:
+      - name: Release on merge action
+        id: release
+        uses: ./
+        with:
+          version-increment-strategy: 'patch'
+      # Use the output from the `release` step
+      - name: Get the output time
+        run: echo "The time was ${{ steps.release.outputs.semver }}"
