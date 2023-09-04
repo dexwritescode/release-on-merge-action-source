@@ -1,8 +1,8 @@
-FROM alpine:3.10
+FROM alpine:3.18
 
 WORKDIR /app
 
 COPY target/debug/release-on-merge-action /app/roma
 
-# Build the releaseaction here
+# Run the release on merge action
 ENTRYPOINT ["/app/roma"]
