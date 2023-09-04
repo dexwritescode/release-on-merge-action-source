@@ -1,6 +1,6 @@
 FROM alpine:3.10
 
-COPY . /builddir/
+COPY target/debug/release-on-merge-action .
 
 # Build the releaseaction here
-ENTRYPOINT ["/releaseaction"]
+ENTRYPOINT ["./release-on-merge-action"]
