@@ -25,10 +25,10 @@ jobs:
 
     # Test the action in Docker and print the output
     - name: Release on merge action
-        id: release
-        uses: ./
-        with:
-          version-increment-strategy: 'patch'
-      # Use the output from the `release` step
-      - name: Get the output version
-        run: echo "The bumped version is ${{ steps.release.outputs.semver }}"
+      id: release
+      uses: ./
+      with:
+        version-increment-strategy: 'patch'
+    # Use the output from the `release` step
+    - name: Get the output version
+      run: echo "The bumped version is ${{ steps.release.outputs.semver }}"
