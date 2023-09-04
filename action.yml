@@ -1,0 +1,16 @@
+name: 'Release on merge action'
+description: 'Create a release on merge'
+author: 'dexwritescode'
+inputs:
+  version-increment-strategy:  # Valid values: major|minor|patch|norelease
+    description: 'The version number to increment. Options major|minor|patch|norelease'
+    required: true
+    default: 'patch'
+outputs:
+  version: # This will be printed out on merge
+    description: 'The version number that will be created'
+runs:
+  using: 'docker'
+  image: 'Dockerfile'
+  args:
+    - ${{ inputs.version-increment-strategy }}
