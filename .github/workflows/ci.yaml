@@ -18,26 +18,26 @@ jobs:
     name: Release on merge action
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions-rs/toolchain@v1
-        with:
-          toolchain: stable
-      - uses: actions-rs/cargo@v1
-      - name: Build
-        with:
-          command: build
-          #args: --release --all-features
-      - uses: actions-rs/cargo@v1
-      - name: Test
-        with:
-          command: test
+    - uses: actions/checkout@v4
+    - uses: actions-rs/toolchain@v1
+      with:
+        toolchain: stable
+    - uses: actions-rs/cargo@v1
+    - name: Build
+      with:
+        command: build
+        #args: --release --all-features
+    - uses: actions-rs/cargo@v1
+    - name: Test
+      with:
+        command: test
 
-      # Test the action in Docker and print the output
-      - name: Release on merge action
-        id: release
-        uses: ./
-        with:
-          version-increment-strategy: 'patch'
-      # Use the output from the `release` step
-      - name: Get the output version
-        run: echo "The bumped version is ${{ steps.release.outputs.semver }}"
+    # Test the action in Docker and print the output
+    - name: Release on merge action
+      id: release
+      uses: ./
+      with:
+        version-increment-strategy: 'patch'
+    # Use the output from the `release` step
+    - name: Get the output version
+      run: echo "The bumped version is ${{ steps.release.outputs.semver }}"
