@@ -15,7 +15,6 @@ concurrency:
 
 jobs:
   build_and_test:
-    name: Release on merge action
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
