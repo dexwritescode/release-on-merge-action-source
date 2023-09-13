@@ -1,8 +1,9 @@
 use std::{env, process::exit};
-
+use std::fs::write;
 use octorust::{auth::Credentials, Client};
 
 fn main() {
+    let github_output_file = env::var("GITHUB_OUTPUT").unwrap();
     let github_token = env::var("GITHUB_TOKEN").ok();
     println!("GITHUB_TOKEN: {:?}", &github_token);
     
@@ -27,5 +28,6 @@ fn main() {
         ),
       );
       
-      env::set_var("GITHUB_OUTPUT", "semver=The version we just incremented");
+      let version = "0.1.0";
+      write(github_output_file, format!("semver={version}")).unwrap();
 }
