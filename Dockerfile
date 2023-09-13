@@ -1,8 +1,8 @@
-FROM alpine:3.18
+FROM rust:1.72 as builder
+WORKDIR /usr/src/release-on-merge-action
+COPY . .
+RUN cargo install --path .
 
-WORKDIR /app
-
-COPY target/debug/roma .
-
-# Run the release on merge action
-ENTRYPOINT ["/app/roma"]
+FROM rust:1.72
+COPY --from=builder /usr/local/cargo/bin/roma /app/roma
+CMD ["/app/roma"]
