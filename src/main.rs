@@ -3,6 +3,7 @@ use std::fs::write;
 
 fn main() {
     let github_output_file = env::var("GITHUB_OUTPUT").unwrap();
+    eprintln!("GITHUB_OUTPUT: {:?}", &github_output_file);
     let github_token = env::var("GITHUB_TOKEN").ok();
     eprintln!("GITHUB_TOKEN: {:?}", &github_token);
     
