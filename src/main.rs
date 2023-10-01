@@ -25,6 +25,5 @@ fn main() {
             format!("version_increment_strategy={version_increment_strategy}"),
         )
         .unwrap();
-        exit(1);
     }
 }
