@@ -17,7 +17,7 @@ fn main() {
         version_increment_strategy
     );
 
-    let _github_token = match env::var("GITHUB_TOKEN") {
+    let _github_token = match env::var("INPUT_GITHUB-TOKEN") {
         Ok(value) => value,
         Err(_) => {
             eprintln!("GITHUB_TOKEN is empty!");
