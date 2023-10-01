@@ -1,0 +1,30 @@
+name: CI
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+env:
+  CARGO_TERM_COLOR: always
+
+concurrency:
+  group: ${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+
+    # Test the action in Docker and print the output
+    - name: Release on merge action
+      id: release
+      uses: ./
+      with:
+        version-increment-strategy: 'patch'
+    # Use the output from the `release` step
+    - name: Get the output version
+      run: echo "The bumped version is ${{ steps.release.outputs.semver }}"

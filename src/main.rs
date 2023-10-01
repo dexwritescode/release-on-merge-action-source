@@ -1,28 +1,17 @@
-use std::{env, process::exit};
-
-use octorust::{auth::Credentials, Client};
+use std::env;
+use std::fs::write;
 
 fn main() {
-    let github_token = env::var("GITHUB_TOKEN").ok();
-    println!("GITHUB_TOKEN: {:?}", &github_token);
-    let github_api_url = env::var("GITHUB_API_URL").ok();    
-    println!("GITHUB_API_URL: {:?}", github_api_url);
+    let github_output_path = env::var("GITHUB_OUTPUT").unwrap();
+    eprintln!("GITHUB_OUTPUT: {:?}", &github_output_path);
 
-    let github_token = match github_token {
-        Some(value) => value,
-        None => {
-          println!("GITHUB_API_URL is empty. Exiting.");
-          exit(1);
-        },
-    };
+    let vis_env = env::var("INPUT_VERSION-INCREMENT-STRATEGY").ok();
+    if vis_env.is_some() {
+        eprintln!("INPUT_VERSION-INCREMENT-STRATEGY: {:?}", vis_env);
+    }
 
-
-    let _github = Client::new(
-        String::from("user-agent-name"),
-        Credentials::Token(
-          github_token
-        ),
-      );
-      
-      env::set_var("GITHUB_OUTPUT", "The version we just incremented");
+    let version = "0.1.0";
+    let output_text = format!("semver={version}");
+    eprintln!("Writing: {}", output_text);
+    write(github_output_path, output_text).unwrap();
 }
