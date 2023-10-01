@@ -1,6 +1,6 @@
 [package]
-name = "roma"
-authors = ["Dex <dexwritescode@gmail.com>"]
+name = "release-on-merge-action"
+authors = ["Dex"]
 version = "0.1.0"
 edition = "2021"
 
