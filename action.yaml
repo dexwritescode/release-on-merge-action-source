@@ -6,6 +6,9 @@ inputs:
     description: 'The version number to increment. Options major|minor|patch|norelease'
     required: true
     default: 'patch'
+  github-token:
+    description: 'Github Authentication Token'
+    required: true
 outputs:
   version: # This will be printed out on merge
     description: 'The version number that will be created'
@@ -14,3 +17,4 @@ runs:
   image: 'Dockerfile'
   args:
     - ${{ inputs.version-increment-strategy }}
+    - ${{ inputs.github-token }}
