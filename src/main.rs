@@ -1,9 +1,14 @@
-use std::fs::write;
 use std::{env, process::exit};
+
+pub mod writer;
+
+const _GITHUB_API_VERSION_HEADER: &str = "X-GitHub-Api-Version";
+const _GITHUB_API_VERSION_VALUE: &str = "2022-11-28";
 
 fn main() {
     let github_output_path = env::var("GITHUB_OUTPUT").unwrap();
     eprintln!("GITHUB_OUTPUT: {:?}", &github_output_path);
+    let w = writer::Writer::new(github_output_path);
 
     let version_increment_strategy = match env::var("INPUT_VERSION-INCREMENT-STRATEGY") {
         Ok(value) => value,
@@ -24,10 +29,9 @@ fn main() {
             exit(1);
         }
     };
-    eprintln!("GITHUB_TOKEN is set");
 
     let version = "0.1.0";
     let output_text = format!("semver={version}");
     eprintln!("Writing: {}", output_text);
-    write(github_output_path, output_text).unwrap();
+    w.write("semver", &version);
 }
