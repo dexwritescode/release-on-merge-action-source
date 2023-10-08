@@ -5,8 +5,10 @@ pub struct Writer {
 }
 
 impl Writer {
-    pub fn new(path: String) -> Writer {
-        Writer { path }
+    pub fn new(path: &str) -> Writer {
+        Writer {
+            path: path.to_owned(),
+        }
     }
 
     pub fn write(&self, key: &str, value: &str) {
