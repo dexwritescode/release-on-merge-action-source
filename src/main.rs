@@ -1,3 +1,4 @@
+use octocrab::Octocrab;
 use std::{env, process::exit};
 
 pub mod writer;
@@ -5,7 +6,8 @@ pub mod writer;
 const _GITHUB_API_VERSION_HEADER: &str = "X-GitHub-Api-Version";
 const _GITHUB_API_VERSION_VALUE: &str = "2022-11-28";
 
-fn main() {
+#[tokio::main]
+async fn main() -> octocrab::Result<()> {
     let github_output_path = env::var("GITHUB_OUTPUT").unwrap();
     eprintln!("GITHUB_OUTPUT: {:?}", &github_output_path);
     let w = writer::Writer::new(github_output_path);
@@ -22,7 +24,7 @@ fn main() {
         version_increment_strategy
     );
 
-    let _github_token = match env::var("INPUT_GITHUB-TOKEN") {
+    let github_token = match env::var("INPUT_GITHUB-TOKEN") {
         Ok(value) => value,
         Err(_) => {
             eprintln!("GITHUB_TOKEN is empty!");
@@ -33,5 +35,25 @@ fn main() {
     let version = "0.1.0";
     let output_text = format!("semver={version}");
     eprintln!("Writing: {}", output_text);
-    w.write("semver", &version);
+    w.write("semver", version);
+
+    let octocrab = Octocrab::builder().personal_token(github_token).build()?;
+
+    let another_release = octocrab
+        .repos("XAMPPRocky", "octocrab")
+        .releases()
+        .get_latest()
+        .await?;
+
+    eprintln!("Release {:?}", another_release);
+
+    let roma_release = octocrab
+        .repos("dexwritescode", "release-on-merge-action")
+        .releases()
+        .get_latest()
+        .await;
+
+    eprintln!("Release {:?}", roma_release);
+
+    Ok(())
 }
