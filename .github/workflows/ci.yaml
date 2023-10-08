@@ -26,7 +26,6 @@ jobs:
       with:
         version-increment-strategy: 'patch'
         github-token: ${{ secrets.GITHUB_TOKEN }}
-        default-version: 'v1.0.0'
     # Use the output from the `release` step
     - name: Get the output version
       run: echo "The bumped version is ${{ steps.release.outputs.semver }}"
