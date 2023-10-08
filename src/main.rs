@@ -2,14 +2,13 @@ use octocrab::{Error, Octocrab};
 use std::process::exit;
 
 pub mod config;
-pub mod writer;
+use config::Config;
 
-const _GITHUB_API_VERSION_HEADER: &str = "X-GitHub-Api-Version";
-const _GITHUB_API_VERSION_VALUE: &str = "2022-11-28";
+pub mod writer;
 
 #[tokio::main]
 async fn main() -> octocrab::Result<()> {
-    let config = config::Config::new();
+    let config = Config::new();
     eprintln!("Config: {:?}", &config);
 
     let w = writer::Writer::new(&config.github_output_path);
@@ -44,7 +43,7 @@ async fn get_release_version(
     github_client: &Octocrab,
     owner: &str,
     repo: &str,
-    config: &config::Config,
+    config: &Config,
 ) -> String {
     github_client
         .repos(owner, repo)
