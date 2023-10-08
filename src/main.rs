@@ -39,21 +39,24 @@ async fn main() -> octocrab::Result<()> {
 
     let octocrab = Octocrab::builder().personal_token(github_token).build()?;
 
-    let another_release = octocrab
+    let octocrab_release_version = octocrab
         .repos("XAMPPRocky", "octocrab")
         .releases()
         .get_latest()
-        .await?;
+        .await
+        // Before mapping to '0.1.0' check if the release count is 0 (Zero)
+        .map_or_else(|e| "0.1.0".to_string(), |r| r.tag_name);
 
-    eprintln!("Release {:?}", another_release);
+    eprintln!("Release {:?}", octocrab_release_version);
 
-    let roma_release = octocrab
+    let roma_release_version = octocrab
         .repos("dexwritescode", "release-on-merge-action")
         .releases()
         .get_latest()
-        .await;
+        .await
+        .map_or_else(|e| "0.1.0".to_string(), |r| r.tag_name);
 
-    eprintln!("Release {:?}", roma_release);
+    eprintln!("Release {:?}", roma_release_version);
 
     Ok(())
 }
