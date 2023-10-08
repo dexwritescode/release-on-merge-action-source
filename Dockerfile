@@ -1,12 +1,23 @@
 FROM rust:1.72-bookworm as builder
-WORKDIR /usr/src/release-on-merge-action
-COPY . .
+
+RUN USER=root cargo new --bin release-on-merge-action
+WORKDIR /release-on-merge-action
+COPY ./Cargo.toml ./Cargo.toml
+COPY ./Cargo.lock ./Cargo.lock
+#RUN cargo build --release
+RUN cargo build
+RUN rm src/*.rs
+
+COPY ./src ./src
 
 # Only build in release mode on the release branch
-#RUN cargo install --path .
-RUN cargo install --debug --path .
+#RUN rm ./target/release/deps/release_on_merge_action*
+#RUN cargo build --release
+RUN rm ./target/debug/deps/release_on_merge_action*
+RUN cargo build
 
 
 FROM gcr.io/distroless/cc-debian12 AS runtime
-COPY --from=builder /usr/local/cargo/bin/release-on-merge-action /app/release-on-merge-action
+#COPY --from=builder /release-on-merge-action/target/release/release-on-merge-action /app/release-on-merge-action
+COPY --from=builder /release-on-merge-action/target/debug/release-on-merge-action /app/release-on-merge-action
 ENTRYPOINT ["/app/release-on-merge-action"]
