@@ -1,4 +1,4 @@
-use octocrab::Octocrab;
+use octocrab::{Error, Octocrab};
 use std::{env, process::exit};
 
 pub mod writer;
@@ -37,26 +37,53 @@ async fn main() -> octocrab::Result<()> {
     eprintln!("Writing: {}", output_text);
     w.write("semver", version);
 
-    let octocrab = Octocrab::builder().personal_token(github_token).build()?;
+    let github_client = Octocrab::builder().personal_token(github_token).build()?;
 
-    let octocrab_release_version = octocrab
-        .repos("XAMPPRocky", "octocrab")
-        .releases()
-        .get_latest()
-        .await
-        // Before mapping to '0.1.0' check if the release count is 0 (Zero)
-        .map_or_else(|e| "0.1.0".to_string(), |r| r.tag_name);
+    let roma_version =
+        get_release_version(&github_client, "dexwritescode", "release-on-merge-action").await;
+    eprintln!("Roma version to increment {}", &roma_version);
 
-    eprintln!("Release {:?}", octocrab_release_version);
+    let octocrab_version = get_release_version(&github_client, "XAMPPRocky", "octocrab").await;
 
-    let roma_release_version = octocrab
-        .repos("dexwritescode", "release-on-merge-action")
-        .releases()
-        .get_latest()
-        .await
-        .map_or_else(|e| "0.1.0".to_string(), |r| r.tag_name);
-
-    eprintln!("Release {:?}", roma_release_version);
+    eprintln!("Octocrab version to bump {}", octocrab_version);
 
     Ok(())
+}
+
+async fn get_release_version(github_client: &Octocrab, owner: &str, repo: &str) -> String {
+    github_client
+        .repos(owner, repo)
+        .releases()
+        .get_latest()
+        .await
+        .map_or_else(
+            |e| match e {
+                Error::GitHub { ref source, .. } => {
+                    if source.message.eq_ignore_ascii_case("Not Found") && source.errors.is_none() {
+                        get_default_version()
+                    } else {
+                        eprintln!("Could not get the version.");
+                        eprintln!("Error: {:?}", &e);
+                        exit(1);
+                    }
+                }
+                _ => {
+                    eprintln!("Could not get the version.");
+                    eprintln!("Error: {:?}", &e);
+                    exit(1);
+                }
+            },
+            |r| r.tag_name,
+        )
+}
+
+fn get_default_version() -> String {
+    let default_version = "v0.1.0".to_string();
+    match env::var("INPUT_DEFAULT-VERSION") {
+        Ok(value) => value,
+        Err(_) => {
+            eprintln!("inputs.default-version not set. Using {}", default_version);
+            default_version
+        }
+    }
 }
