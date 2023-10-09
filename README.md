@@ -1,5 +1,4 @@
 # release-on-merge-action
-=========================
 
 [![CI](https://github.com/dexwritescode/release-on-merge-action/actions/workflows/ci.yaml/badge.svg?branch=main)](https://github.com/dexwritescode/release-on-merge-action/actions/workflows/ci.yaml)
 
