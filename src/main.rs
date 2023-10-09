@@ -1,9 +1,11 @@
 use octocrab::{Error, Octocrab};
+use semver::Semver;
 use std::process::exit;
+use std::str::FromStr;
 
 pub mod config;
 use config::Config;
-
+pub mod semver;
 pub mod writer;
 
 #[tokio::main]
@@ -30,11 +32,19 @@ async fn main() -> octocrab::Result<()> {
     )
     .await;
     eprintln!("Roma version to increment {}", &roma_version);
+    eprintln!(
+        "Roma incremented version to {}",
+        &roma_version.increment(&config.version_increment_strategy)
+    );
 
     let octocrab_version =
         get_release_version(&github_client, "XAMPPRocky", "octocrab", &config).await;
 
     eprintln!("Octocrab version to bump {}", octocrab_version);
+    eprintln!(
+        "Octocrab bumped version to {}",
+        &octocrab_version.increment(&config.version_increment_strategy)
+    );
 
     Ok(())
 }
@@ -44,7 +54,7 @@ async fn get_release_version(
     owner: &str,
     repo: &str,
     config: &Config,
-) -> String {
+) -> Semver {
     github_client
         .repos(owner, repo)
         .releases()
@@ -54,7 +64,7 @@ async fn get_release_version(
             |e| match e {
                 Error::GitHub { ref source, .. } => {
                     if source.message.eq_ignore_ascii_case("Not Found") && source.errors.is_none() {
-                        config.default_version.clone()
+                        Semver::from_str(&config.default_version).unwrap()
                     } else {
                         eprintln!("Could not get the version.");
                         eprintln!("Error: {:?}", &e);
@@ -67,6 +77,6 @@ async fn get_release_version(
                     exit(1);
                 }
             },
-            |r| r.tag_name,
+            |r| Semver::from_str(&r.tag_name).unwrap(),
         )
 }

@@ -1,10 +1,12 @@
-use std::{env, fmt, process::exit};
+use std::{env, fmt, process::exit, str::FromStr};
+
+use crate::semver::VersionIncrementStrategy;
 
 #[derive(Debug)]
 pub struct Config {
     pub github_output_path: String,
     pub github_token: Token,
-    pub version_increment_strategy: String,
+    pub version_increment_strategy: VersionIncrementStrategy,
     pub default_version: String,
 }
 
@@ -53,14 +55,22 @@ fn get_github_output_path() -> String {
     }
 }
 
-fn get_version_increment_strategy() -> String {
-    match env::var("INPUT_VERSION-INCREMENT-STRATEGY") {
-        Ok(value) => value,
-        Err(_) => {
-            eprintln!("INPUT_VERSION-INCREMENT-STRATEGY should be set");
+fn get_version_increment_strategy() -> VersionIncrementStrategy {
+    env::var("INPUT_VERSION-INCREMENT-STRATEGY").map_or_else(
+        |e| {
+            eprintln!("INPUT_VERSION-INCREMENT-STRATEGY should be set {:?}", e);
             exit(1);
-        }
-    }
+        },
+        |value| {
+            VersionIncrementStrategy::from_str(&value).map_or_else(
+                |_| {
+                    eprintln!("Invalid version-increment-strategy value: {}", value);
+                    exit(1);
+                },
+                |vis| vis,
+            )
+        },
+    )
 }
 
 fn get_default_version() -> String {
