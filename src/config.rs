@@ -90,15 +90,15 @@ fn get_default_version() -> String {
 }
 
 fn get_repo_info() -> (String, String) {
-    match env::var("GITHUB_ACTION_REPOSITORY") {
+    match env::var("GITHUB_REPOSITORY") {
         Ok(value) => {
             let info: Vec<&str> = value.split('/').collect();
-            eprintln!("GITHUB_ACTION_REPOSITORY {}", value);
+            eprintln!("GITHUB_REPOSITORY {}", value);
             eprintln!("Repo {:?}", info);
             (info[0].to_owned(), info[1].to_owned())
         }
         Err(_) => {
-            eprintln!("GITHUB_ACTION_REPOSITORY is empty!");
+            eprintln!("GITHUB_REPOSITORY is empty!");
             exit(1);
         }
     }
