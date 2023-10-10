@@ -93,6 +93,8 @@ fn get_repo_info() -> (String, String) {
     match env::var("GITHUB_ACTION_REPOSITORY") {
         Ok(value) => {
             let info: Vec<&str> = value.split('/').collect();
+            eprintln!("GITHUB_ACTION_REPOSITORY {}", value);
+            eprintln!("Repo {:?}", info);
             (info[0].to_owned(), info[1].to_owned())
         }
         Err(_) => {
