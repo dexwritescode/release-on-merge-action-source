@@ -6,7 +6,7 @@ use crate::semver::VersionIncrementStrategy;
 pub struct Config {
     pub github_output_path: String,
     pub github_token: Token,
-    pub version_increment_strategy: VersionIncrementStrategy,
+    pub increment_strategy: VersionIncrementStrategy,
     pub default_version: String,
     pub repo: String,
     pub owner: String,
@@ -32,7 +32,7 @@ impl Config {
         Config {
             github_output_path: get_github_output_path(),
             github_token: Token(get_github_token()),
-            version_increment_strategy: get_version_increment_strategy(),
+            increment_strategy: get_version_increment_strategy(),
             default_version: get_default_version(),
             repo,
             owner,
@@ -79,12 +79,12 @@ fn get_version_increment_strategy() -> VersionIncrementStrategy {
 }
 
 fn get_default_version() -> String {
-    let default_version = "v0.1.0".to_string();
+    let initial_version = "v0.0.0".to_string();
     match env::var("INPUT_DEFAULT-VERSION") {
         Ok(value) => value,
         Err(_) => {
-            eprintln!("inputs.default-version not set. Using {}", default_version);
-            default_version
+            eprintln!("inputs.default-version not set. Using {}", initial_version);
+            initial_version
         }
     }
 }

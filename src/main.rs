@@ -24,26 +24,11 @@ async fn main() -> octocrab::Result<()> {
         .personal_token(config.github_token.0.clone())
         .build()?;
 
-    let roma_version = get_release_version(
-        &github_client,
-        "dexwritescode",
-        "release-on-merge-action",
-        &config,
-    )
-    .await;
-    eprintln!("Roma version to increment {}", &roma_version);
+    let version = get_release_version(&github_client, &config.owner, &config.repo, &config).await;
+    eprintln!("Release version {}", &version);
     eprintln!(
-        "Roma incremented version to {}",
-        &roma_version.increment(&config.version_increment_strategy)
-    );
-
-    let octocrab_version =
-        get_release_version(&github_client, "XAMPPRocky", "octocrab", &config).await;
-
-    eprintln!("Octocrab version to bump {}", octocrab_version);
-    eprintln!(
-        "Octocrab bumped version to {}",
-        &octocrab_version.increment(&config.version_increment_strategy)
+        "Incremented version {}",
+        &version.increment(&config.increment_strategy)
     );
 
     Ok(())
