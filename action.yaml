@@ -6,7 +6,7 @@ inputs:
     description: 'The version number to increment. Options major|minor|patch|norelease'
     required: true
     default: 'patch'
-  default-version:
+  initial-version:
     description: 'The very first release version to create.'
     required: false
     default: 'v0.1.0'
@@ -22,4 +22,4 @@ runs:
   args:
     - ${{ inputs.version-increment-strategy }}
     - ${{ inputs.github-token }}
-    - ${{ inputs.default-version }}
+    - ${{ inputs.initial-version }}

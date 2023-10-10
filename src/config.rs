@@ -80,10 +80,10 @@ fn get_version_increment_strategy() -> VersionIncrementStrategy {
 
 fn get_default_version() -> String {
     let initial_version = "v0.0.0".to_string();
-    match env::var("INPUT_DEFAULT-VERSION") {
+    match env::var("INPUT_INITIAL-VERSION") {
         Ok(value) => value,
         Err(_) => {
-            eprintln!("inputs.default-version not set. Using {}", initial_version);
+            eprintln!("inputs.initial-version not set. Using {}", initial_version);
             initial_version
         }
     }
