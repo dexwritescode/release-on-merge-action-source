@@ -15,23 +15,19 @@ async fn main() -> octocrab::Result<()> {
 
     let w = writer::Writer::new(&config.github_output_path);
 
-    let version = "0.1.0";
-    let output_text = format!("semver={version}");
-    eprintln!("Writing: {}", output_text);
-    w.write("semver", version);
-
     let github_client = Octocrab::builder()
         .personal_token(config.github_token.0.clone())
         .build()?;
 
-    let version = get_release_version(&github_client, &config)
-        .await
-        .unwrap_or(Semver::from_str(&config.default_version).unwrap());
-    eprintln!("Release version {:?}", &version);
-    eprintln!(
-        "Incremented version {}",
-        &version.increment(&config.increment_strategy)
-    );
+    let release = get_release_version(&github_client, &config).await;
+    eprintln!("Release version {:?}", &release);
+    let new_release = match release {
+        Some(v) => v.increment(&config.increment_strategy),
+        None => Semver::from_str(&config.default_version).unwrap(),
+    };
+    eprintln!("Incremented version {}", &new_release);
+    eprintln!("Writing: {:?}", new_release.to_string());
+    w.write("semver", &new_release.to_string());
 
     Ok(())
 }
