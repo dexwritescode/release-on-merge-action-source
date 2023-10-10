@@ -24,8 +24,10 @@ async fn main() -> octocrab::Result<()> {
         .personal_token(config.github_token.0.clone())
         .build()?;
 
-    let version = get_release_version(&github_client, &config.owner, &config.repo, &config).await;
-    eprintln!("Release version {}", &version);
+    let version = get_release_version(&github_client, &config)
+        .await
+        .unwrap_or(Semver::from_str(&config.default_version).unwrap());
+    eprintln!("Release version {:?}", &version);
     eprintln!(
         "Incremented version {}",
         &version.increment(&config.increment_strategy)
@@ -34,14 +36,9 @@ async fn main() -> octocrab::Result<()> {
     Ok(())
 }
 
-async fn get_release_version(
-    github_client: &Octocrab,
-    owner: &str,
-    repo: &str,
-    config: &Config,
-) -> Semver {
+async fn get_release_version(github_client: &Octocrab, config: &Config) -> Option<Semver> {
     github_client
-        .repos(owner, repo)
+        .repos(&config.owner, &config.repo)
         .releases()
         .get_latest()
         .await
@@ -49,7 +46,7 @@ async fn get_release_version(
             |e| match e {
                 Error::GitHub { ref source, .. } => {
                     if source.message.eq_ignore_ascii_case("Not Found") && source.errors.is_none() {
-                        Semver::from_str(&config.default_version).unwrap()
+                        None
                     } else {
                         eprintln!("Could not get the version.");
                         eprintln!("Error: {:?}", &e);
@@ -62,6 +59,6 @@ async fn get_release_version(
                     exit(1);
                 }
             },
-            |r| Semver::from_str(&r.tag_name).unwrap(),
+            |r| Semver::from_str(&r.tag_name).ok(),
         )
 }

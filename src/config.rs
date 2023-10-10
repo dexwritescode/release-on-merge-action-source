@@ -28,7 +28,7 @@ impl Default for Config {
 
 impl Config {
     pub fn new() -> Config {
-        let (repo, owner) = get_repo_info();
+        let (owner, repo) = get_repo_info();
         Config {
             github_output_path: get_github_output_path(),
             github_token: Token(get_github_token()),
@@ -79,7 +79,7 @@ fn get_version_increment_strategy() -> VersionIncrementStrategy {
 }
 
 fn get_default_version() -> String {
-    let initial_version = "v0.0.0".to_string();
+    let initial_version = "v0.1.0".to_string();
     match env::var("INPUT_INITIAL-VERSION") {
         Ok(value) => value,
         Err(_) => {
