@@ -1,6 +1,6 @@
 [package]
 name = "release-on-merge-action"
-authors = ["Dex"]
+authors = ["Dex <dexwritescode@proton.me>"]
 version = "0.1.0"
 edition = "2021"
 
