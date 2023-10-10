@@ -8,6 +8,8 @@ pub struct Config {
     pub github_token: Token,
     pub version_increment_strategy: VersionIncrementStrategy,
     pub default_version: String,
+    pub repo: String,
+    pub owner: String,
 }
 
 pub struct Token(pub String);
@@ -26,11 +28,14 @@ impl Default for Config {
 
 impl Config {
     pub fn new() -> Config {
+        let (repo, owner) = get_repo_info();
         Config {
             github_output_path: get_github_output_path(),
             github_token: Token(get_github_token()),
             version_increment_strategy: get_version_increment_strategy(),
             default_version: get_default_version(),
+            repo,
+            owner,
         }
     }
 }
@@ -80,6 +85,19 @@ fn get_default_version() -> String {
         Err(_) => {
             eprintln!("inputs.default-version not set. Using {}", default_version);
             default_version
+        }
+    }
+}
+
+fn get_repo_info() -> (String, String) {
+    match env::var("GITHUB_ACTION_REPOSITORY") {
+        Ok(value) => {
+            let info: Vec<&str> = value.split('/').collect();
+            (info[0].to_owned(), info[1].to_owned())
+        }
+        Err(_) => {
+            eprintln!("GITHUB_ACTION_REPOSITORY is empty!");
+            exit(1);
         }
     }
 }
