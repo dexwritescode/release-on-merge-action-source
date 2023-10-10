@@ -6,8 +6,10 @@ use crate::semver::VersionIncrementStrategy;
 pub struct Config {
     pub github_output_path: String,
     pub github_token: Token,
-    pub version_increment_strategy: VersionIncrementStrategy,
+    pub increment_strategy: VersionIncrementStrategy,
     pub default_version: String,
+    pub repo: String,
+    pub owner: String,
 }
 
 pub struct Token(pub String);
@@ -26,11 +28,14 @@ impl Default for Config {
 
 impl Config {
     pub fn new() -> Config {
+        let (owner, repo) = get_repo_info();
         Config {
             github_output_path: get_github_output_path(),
             github_token: Token(get_github_token()),
-            version_increment_strategy: get_version_increment_strategy(),
+            increment_strategy: get_version_increment_strategy(),
             default_version: get_default_version(),
+            repo,
+            owner,
         }
     }
 }
@@ -74,12 +79,27 @@ fn get_version_increment_strategy() -> VersionIncrementStrategy {
 }
 
 fn get_default_version() -> String {
-    let default_version = "v0.1.0".to_string();
-    match env::var("INPUT_DEFAULT-VERSION") {
+    let initial_version = "v0.1.0".to_string();
+    match env::var("INPUT_INITIAL-VERSION") {
         Ok(value) => value,
         Err(_) => {
-            eprintln!("inputs.default-version not set. Using {}", default_version);
-            default_version
+            eprintln!("inputs.initial-version not set. Using {}", initial_version);
+            initial_version
+        }
+    }
+}
+
+fn get_repo_info() -> (String, String) {
+    match env::var("GITHUB_REPOSITORY") {
+        Ok(value) => {
+            let info: Vec<&str> = value.split('/').collect();
+            eprintln!("GITHUB_REPOSITORY {}", value);
+            eprintln!("Repo {:?}", info);
+            (info[0].to_owned(), info[1].to_owned())
+        }
+        Err(_) => {
+            eprintln!("GITHUB_REPOSITORY is empty!");
+            exit(1);
         }
     }
 }

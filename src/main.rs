@@ -15,48 +15,26 @@ async fn main() -> octocrab::Result<()> {
 
     let w = writer::Writer::new(&config.github_output_path);
 
-    let version = "0.1.0";
-    let output_text = format!("semver={version}");
-    eprintln!("Writing: {}", output_text);
-    w.write("semver", version);
-
     let github_client = Octocrab::builder()
         .personal_token(config.github_token.0.clone())
         .build()?;
 
-    let roma_version = get_release_version(
-        &github_client,
-        "dexwritescode",
-        "release-on-merge-action",
-        &config,
-    )
-    .await;
-    eprintln!("Roma version to increment {}", &roma_version);
-    eprintln!(
-        "Roma incremented version to {}",
-        &roma_version.increment(&config.version_increment_strategy)
-    );
-
-    let octocrab_version =
-        get_release_version(&github_client, "XAMPPRocky", "octocrab", &config).await;
-
-    eprintln!("Octocrab version to bump {}", octocrab_version);
-    eprintln!(
-        "Octocrab bumped version to {}",
-        &octocrab_version.increment(&config.version_increment_strategy)
-    );
+    let release = get_release_version(&github_client, &config).await;
+    eprintln!("Release version {:?}", &release);
+    let new_release = match release {
+        Some(v) => v.increment(&config.increment_strategy),
+        None => Semver::from_str(&config.default_version).unwrap(),
+    };
+    eprintln!("Incremented version {}", &new_release);
+    eprintln!("Writing: {:?}", new_release.to_string());
+    w.write("semver", &new_release.to_string());
 
     Ok(())
 }
 
-async fn get_release_version(
-    github_client: &Octocrab,
-    owner: &str,
-    repo: &str,
-    config: &Config,
-) -> Semver {
+async fn get_release_version(github_client: &Octocrab, config: &Config) -> Option<Semver> {
     github_client
-        .repos(owner, repo)
+        .repos(&config.owner, &config.repo)
         .releases()
         .get_latest()
         .await
@@ -64,7 +42,7 @@ async fn get_release_version(
             |e| match e {
                 Error::GitHub { ref source, .. } => {
                     if source.message.eq_ignore_ascii_case("Not Found") && source.errors.is_none() {
-                        Semver::from_str(&config.default_version).unwrap()
+                        None
                     } else {
                         eprintln!("Could not get the version.");
                         eprintln!("Error: {:?}", &e);
@@ -77,6 +55,6 @@ async fn get_release_version(
                     exit(1);
                 }
             },
-            |r| Semver::from_str(&r.tag_name).unwrap(),
+            |r| Semver::from_str(&r.tag_name).ok(),
         )
 }
