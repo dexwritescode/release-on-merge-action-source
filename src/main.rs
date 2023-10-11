@@ -1,4 +1,4 @@
-use std::str::FromStr;
+use std::{process::exit, str::FromStr};
 
 pub mod config;
 use config::Config;
@@ -6,12 +6,22 @@ pub mod release;
 use release::Release;
 pub mod semver;
 use semver::Semver;
+
+use crate::semver::VersionIncrementStrategy;
 pub mod writer;
 
 #[tokio::main]
 async fn main() -> octocrab::Result<()> {
     let config = Config::new();
     eprintln!("Config: {:?}", &config);
+
+    if config.increment_strategy == VersionIncrementStrategy::NoRelease {
+        eprintln!(
+            "Incremented strategy {:?} exiting",
+            &config.increment_strategy
+        );
+        exit(0);
+    }
 
     let rel = Release::new(&config);
     let latest_tag = rel.get_latest_tag().await;

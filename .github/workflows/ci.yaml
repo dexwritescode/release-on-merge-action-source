@@ -39,3 +39,4 @@ jobs:
     # Use the output from the `release` step
     - name: Get the output version
       run: echo "The bumped version is ${{ steps.release.outputs.version }}"
+      run: echo "The bumped tag is ${{ steps.release.outputs.tag }}"

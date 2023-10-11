@@ -2,7 +2,7 @@ use regex::Regex;
 use std::fmt;
 use std::str::FromStr;
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum VersionIncrementStrategy {
     Major,
     Minor,
