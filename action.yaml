@@ -14,7 +14,7 @@ inputs:
     description: 'Github Authentication Token'
     required: true
   tag-prefix:
-    description: 'Git tag prefix. Example the 'v' in v1.2.3'
+    description: 'Git tag prefix. Example the v in v1.2.3'
     required: false
     default: 'v'
 outputs:
