@@ -7,14 +7,14 @@ inputs:
     required: true
     default: 'patch'
   initial-version:
-    description: 'The very first release version to create. The Github release will be {tag-prefix}{version}, ex: 'v0.1.0''
+    description: 'The very first release version to create. The default Github tag will be v0.1.0'
     required: false
     default: '0.1.0'
   github-token:
     description: 'Github Authentication Token'
     required: true
   tag-prefix:
-    description: 'Git tag prefix. Example the 'v' in 'v1.2.3''
+    description: 'Git tag prefix. Example the 'v' in v1.2.3'
     required: false
     default: 'v'
 outputs:
