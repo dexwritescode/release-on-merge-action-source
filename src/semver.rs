@@ -2,7 +2,7 @@ use regex::Regex;
 use std::fmt;
 use std::str::FromStr;
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum VersionIncrementStrategy {
     Major,
     Minor,
@@ -102,6 +102,17 @@ impl Semver {
             VersionIncrementStrategy::NoRelease => self.clone(),
         }
     }
+
+    pub fn get_version(&self) -> String {
+        format!("{}.{}.{}", self.major, self.minor, self.patch)
+    }
+
+    pub fn get_tag(&self) -> String {
+        format!(
+            "{}{}.{}.{}",
+            self.prefix, self.major, self.minor, self.patch
+        )
+    }
 }
 
 #[cfg(test)]
@@ -161,10 +172,23 @@ mod tests {
     fn to_string() {
         let version = Semver::new(12, 20, 3, "ver");
         assert_eq!(version.to_string(), "ver12.20.3");
+        assert_eq!(version.get_tag(), "ver12.20.3");
+        assert_eq!(version.get_version(), "12.20.3");
+
         let version2 = Semver::new(1, 0, 3, "v");
         assert_eq!(version2.to_string(), "v1.0.3");
+        assert_eq!(version2.get_tag(), "v1.0.3");
+        assert_eq!(version2.get_version(), "1.0.3");
+
         let version3 = Semver::new(0, 1, 0, "V");
         assert_eq!(version3.to_string(), "V0.1.0");
+        assert_eq!(version3.get_tag(), "V0.1.0");
+        assert_eq!(version3.get_version(), "0.1.0");
+
+        let version4 = Semver::new(0, 1, 0, "");
+        assert_eq!(version4.to_string(), "0.1.0");
+        assert_eq!(version4.get_tag(), "0.1.0");
+        assert_eq!(version4.get_version(), "0.1.0");
     }
 
     #[test]

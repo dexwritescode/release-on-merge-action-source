@@ -8,6 +8,7 @@ pub struct Config {
     pub github_token: Token,
     pub increment_strategy: VersionIncrementStrategy,
     pub default_version: String,
+    pub tag_prefix: String,
     pub repo: String,
     pub owner: String,
 }
@@ -34,9 +35,14 @@ impl Config {
             github_token: Token(get_github_token()),
             increment_strategy: get_version_increment_strategy(),
             default_version: get_default_version(),
+            tag_prefix: get_tag_prefix(),
             repo,
             owner,
         }
+    }
+
+    pub fn get_default_tag(&self) -> String {
+        format!("{}{}", self.tag_prefix, self.default_version)
     }
 }
 
@@ -79,14 +85,7 @@ fn get_version_increment_strategy() -> VersionIncrementStrategy {
 }
 
 fn get_default_version() -> String {
-    let initial_version = "v0.1.0".to_string();
-    match env::var("INPUT_INITIAL-VERSION") {
-        Ok(value) => value,
-        Err(_) => {
-            eprintln!("inputs.initial-version not set. Using {}", initial_version);
-            initial_version
-        }
-    }
+    env::var("INPUT_INITIAL-VERSION").unwrap_or("0.1.0".to_string())
 }
 
 fn get_repo_info() -> (String, String) {
@@ -102,4 +101,8 @@ fn get_repo_info() -> (String, String) {
             exit(1);
         }
     }
+}
+
+fn get_tag_prefix() -> String {
+    env::var("INPUT_TAG-PREFIX").unwrap_or("v".to_string())
 }

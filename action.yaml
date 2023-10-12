@@ -7,15 +7,21 @@ inputs:
     required: true
     default: 'patch'
   initial-version:
-    description: 'The very first release version to create.'
+    description: 'The very first release version to create. The default Github tag will be v0.1.0'
     required: false
-    default: 'v0.1.0'
+    default: '0.1.0'
   github-token:
     description: 'Github Authentication Token'
     required: true
+  tag-prefix:
+    description: 'Git tag prefix. Example the v in v1.2.3'
+    required: false
+    default: 'v'
 outputs:
-  version: # This will be printed out on merge
+  version:
     description: 'The version number that will be created'
+  tag:
+    description: 'The version number that will be created prepended by the tag prefix'
 runs:
   using: 'docker'
   image: 'Dockerfile'
@@ -23,3 +29,4 @@ runs:
     - ${{ inputs.version-increment-strategy }}
     - ${{ inputs.github-token }}
     - ${{ inputs.initial-version }}
+    - ${{ inputs.tag-prefix }}

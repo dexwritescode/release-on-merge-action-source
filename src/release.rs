@@ -28,7 +28,7 @@ impl Release {
         }
     }
 
-    pub async fn get_release_version(&self) -> Option<Semver> {
+    pub async fn get_latest_tag(&self) -> Option<Semver> {
         self.client
             .repos(&self.owner, &self.repo)
             .releases()

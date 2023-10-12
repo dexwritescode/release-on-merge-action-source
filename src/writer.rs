@@ -1,17 +1,21 @@
-use std::fs::write;
+use std::fs::OpenOptions;
+use std::io::prelude::Write;
+use std::io::LineWriter;
 
 pub struct Writer {
-    path: String,
+    file: std::io::LineWriter<std::fs::File>,
 }
 
 impl Writer {
     pub fn new(path: &str) -> Writer {
         Writer {
-            path: path.to_owned(),
+            file: LineWriter::new(OpenOptions::new().write(true).open(path).unwrap()),
         }
     }
 
-    pub fn write(&self, key: &str, value: &str) {
-        write(&self.path, format!("{key}={value}")).unwrap();
+    pub fn write(&mut self, key: &str, value: &str) {
+        self.file
+            .write_all(format!("{key}={value}\n").as_bytes())
+            .unwrap();
     }
 }
