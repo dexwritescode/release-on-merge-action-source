@@ -1,4 +1,4 @@
-use std::fs::File;
+use std::fs::OpenOptions;
 use std::io::prelude::*;
 use std::io::LineWriter;
 
@@ -9,7 +9,7 @@ pub struct Writer {
 impl Writer {
     pub fn new(path: &str) -> Writer {
         Writer {
-            file: LineWriter::new(File::open(path).unwrap()),
+            file: LineWriter::new(OpenOptions::new().write(true).open(path).unwrap()),
         }
     }
 
@@ -17,6 +17,5 @@ impl Writer {
         self.file
             .write_all(format!("{key}={value}\n").as_bytes())
             .unwrap();
-        //write(&self.path, format!("{key}={value}")).unwrap();
     }
 }
