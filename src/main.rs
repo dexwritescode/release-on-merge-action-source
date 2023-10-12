@@ -16,10 +16,7 @@ async fn main() -> octocrab::Result<()> {
     eprintln!("Config: {:?}", &config);
 
     if config.increment_strategy == VersionIncrementStrategy::NoRelease {
-        eprintln!(
-            "Incremented strategy {:?} exiting",
-            &config.increment_strategy
-        );
+        eprintln!("Increment strategy NoRelease - exiting");
         exit(0);
     }
 

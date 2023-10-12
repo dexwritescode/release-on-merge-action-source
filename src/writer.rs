@@ -1,5 +1,5 @@
 use std::fs::OpenOptions;
-use std::io::prelude::*;
+use std::io::prelude::Write;
 use std::io::LineWriter;
 
 pub struct Writer {
