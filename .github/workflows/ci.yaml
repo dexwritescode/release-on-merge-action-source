@@ -25,6 +25,7 @@ jobs:
       - run: cargo test
 
   build:
+    permissions: write-all
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
