@@ -1,5 +1,7 @@
 use crate::Config;
 use crate::Semver;
+use octocrab::repos::releases::MakeLatest;
+use octocrab::Result;
 use octocrab::{Error, Octocrab};
 use std::{process::exit, str::FromStr};
 
@@ -55,5 +57,19 @@ impl Release {
                 },
                 |r| Semver::from_str(&r.tag_name).ok(),
             )
+    }
+
+    pub async fn create_release(&self, tag: &Semver) -> Result<octocrab::models::repos::Release> {
+        self.client
+            .repos(&self.owner, &self.repo)
+            .releases()
+            .create(&tag.get_tag())
+            //.body(body)
+            .draft(false)
+            .make_latest(MakeLatest::True)
+            .name(&tag.get_tag())
+            //.target_commitish(target_commitish)
+            .send()
+            .await
     }
 }

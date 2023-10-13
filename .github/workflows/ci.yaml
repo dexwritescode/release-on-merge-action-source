@@ -25,6 +25,7 @@ jobs:
       - run: cargo test
 
   build:
+    permissions: write-all
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
@@ -36,8 +37,7 @@ jobs:
       with:
         version-increment-strategy: 'patch'
         github-token: ${{ secrets.GITHUB_TOKEN }}
+    
     # Use the output from the `release` step
-    - name: Get the output version
-      run: |
-        echo "The bumped version is ${{ steps.release.outputs.version }}" \
-        echo "The bumped tag is ${{ steps.release.outputs.tag }}"
+    - name: Get the output version  
+      run: echo "version ${{ steps.release.outputs.version }} - tag ${{ steps.release.outputs.tag }}"

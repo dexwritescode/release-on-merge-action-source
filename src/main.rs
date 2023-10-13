@@ -27,6 +27,9 @@ async fn main() -> octocrab::Result<()> {
     let new_tag = latest_tag.map_or(default_tag, |v| v.increment(&config.increment_strategy));
     eprintln!("Incremented version {}", &new_tag);
 
+    let new_release = rel.create_release(&new_tag).await?;
+    eprintln!("Created release {:?}", &new_release);
+
     let mut w = writer::Writer::new(&config.github_output_path);
     w.write("version", &new_tag.get_version());
     w.write("tag", &new_tag.get_tag());
