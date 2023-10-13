@@ -38,9 +38,5 @@ jobs:
         github-token: ${{ secrets.GITHUB_TOKEN }}
     
     # Use the output from the `release` step
-    - name: Get the output version
-      steps:
-        - env:
-            VERSION: ${{ steps.release.outputs.version }}
-            TAG:     ${{ steps.release.outputs.tag }}
-        - run: echo "version $VERSION - tag $TAG"
+    - name: Get the output version  
+      run: echo "version ${{ steps.release.outputs.version }} - tag ${{ steps.release.outputs.tag }}"
