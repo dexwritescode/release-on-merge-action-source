@@ -43,4 +43,4 @@ jobs:
         - env:
             VERSION: ${{ steps.release.outputs.version }}
             TAG:     ${{ steps.release.outputs.tag }}
-          run: echo "version $VERSION - tag $TAG"
+        - run: echo "version $VERSION - tag $TAG"
