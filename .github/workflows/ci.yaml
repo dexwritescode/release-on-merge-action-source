@@ -36,8 +36,11 @@ jobs:
       with:
         version-increment-strategy: 'patch'
         github-token: ${{ secrets.GITHUB_TOKEN }}
+    
     # Use the output from the `release` step
     - name: Get the output version
-      run: |
-        echo "The bumped version is ${{ steps.release.outputs.version }}" \
-        echo "The bumped tag is ${{ steps.release.outputs.tag }}"
+      steps:
+        - env:
+            VERSION: ${{ steps.release.outputs.version }}
+            TAG:     ${{ steps.release.outputs.tag }}
+          run: echo "version: $VERSION, tag: $TAG"
