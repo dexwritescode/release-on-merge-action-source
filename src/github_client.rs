@@ -1,8 +1,8 @@
+use self::models::CreateReleaseRequest;
 use crate::Config;
-use crate::Semver;
 
-use anyhow::Result;
 use reqwest::blocking::Client;
+use reqwest::blocking::Response;
 use reqwest::header;
 use reqwest::Error;
 
@@ -43,7 +43,7 @@ impl GithubClient {
     }
 
     // GET /repos/{owner}/{repo}/releases/latest
-    pub fn get_latest_release(&self) -> Result<reqwest::blocking::Response, Error> {
+    pub fn get_latest_release(&self) -> Result<Response, Error> {
         self.client
             .get(format!(
                 "{}/repos/{}/{}/releases/latest",
@@ -53,12 +53,13 @@ impl GithubClient {
     }
 
     // POST /repos/{owner}/{repo}/releases
-    pub fn create_release(&self, _tag: &Semver) -> Result<reqwest::blocking::Response, Error> {
+    pub fn create_release(&self, request: &CreateReleaseRequest) -> Result<Response, Error> {
         self.client
             .post(format!(
                 "{}/repos/{}/{}/releases/latest",
                 self.github_host, self.owner, self.repo
             ))
+            .json(request)
             .send()
     }
 }
