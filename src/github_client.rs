@@ -56,7 +56,7 @@ impl GithubClient {
     pub fn create_release(&self, request: &CreateReleaseRequest) -> Result<Response, Error> {
         self.client
             .post(format!(
-                "{}/repos/{}/{}/releases/latest",
+                "{}/repos/{}/{}/releases",
                 self.github_host, self.owner, self.repo
             ))
             .json(request)

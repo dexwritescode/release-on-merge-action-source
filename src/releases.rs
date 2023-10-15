@@ -62,13 +62,13 @@ impl Releases<'_> {
 
         let release: Option<TagName> = match response.status() {
             StatusCode::CREATED => response.json().unwrap(),
-            StatusCode::NOT_FOUND => None,
             StatusCode::UNAUTHORIZED => {
                 eprintln!("Unauthorized. Make sure you are using a valid token.");
                 exit(1);
             }
             s => {
                 eprintln!("Received response status {}", s);
+                eprintln!("{:?}", &response);
                 exit(1);
             }
         };
