@@ -1,17 +1,12 @@
+use crate::github_client::models::LatestRelease;
 use crate::github_client::GithubClient;
 use crate::Config;
 use crate::Semver;
 
 use anyhow::Result;
 use reqwest::StatusCode;
-use serde::Deserialize;
 
 use std::process::exit;
-
-#[derive(Deserialize, Debug)]
-pub struct LatestRelease {
-    pub tag_name: String,
-}
 
 pub struct Releases<'config> {
     _config: &'config Config,
@@ -26,7 +21,6 @@ impl Releases<'_> {
         }
     }
 
-    // /repos/{owner}/{repo}/releases/latest
     pub fn get_latest_release(&self) -> Option<LatestRelease> {
         let latest_release_reponse = match self.client.get_latest_release() {
             Ok(v) => v,

@@ -13,6 +13,8 @@ pub struct GithubClient {
     github_host: String,
 }
 
+pub mod models;
+
 impl GithubClient {
     pub fn new(config: &Config) -> GithubClient {
         let mut headers = header::HeaderMap::new();
