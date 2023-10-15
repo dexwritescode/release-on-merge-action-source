@@ -8,6 +8,9 @@ const GITHUB_OUTPUT: &str = "GITHUB_OUTPUT";
 const GITHUB_TOKEN: &str = "INPUT_GITHUB-TOKEN";
 const TAG_PREFIX: &str = "INPUT_TAG-PREFIX";
 const GITHUB_HOST: &str = "INPUT_GITHUB-HOST";
+const COMMITISH: &str = "INPUT_TARGET-COMMITISH";
+const BODY: &str = "INPUT_BODY";
+const GENERATE_RELEASE_NOTES: &str = "INPUT_GENERATE-RELEASE-NOTES";
 
 #[derive(Debug)]
 pub struct Config {
@@ -19,6 +22,9 @@ pub struct Config {
     pub tag_prefix: String,
     pub repo: String,
     pub owner: String,
+    pub commitish: String,
+    pub body: String,
+    pub generate_release_notes: bool,
 }
 
 pub struct Token(pub String);
@@ -47,6 +53,9 @@ impl Config {
             tag_prefix: get_tag_prefix(),
             repo,
             owner,
+            commitish: get_commitish(),
+            body: get_body(),
+            generate_release_notes: get_generate_release_notes(),
         }
     }
 
@@ -113,4 +122,31 @@ fn get_tag_prefix() -> String {
 
 fn get_github_host() -> String {
     env::var(GITHUB_HOST).unwrap_or("https://api.github.com".to_string())
+}
+
+fn get_commitish() -> String {
+    env::var(COMMITISH).unwrap_or_else(|e| {
+        eprintln!("Could not read {}", COMMITISH);
+        eprintln!("Error {}", e);
+        exit(1);
+    })
+}
+
+fn get_body() -> String {
+    env::var(BODY).unwrap_or_else(|e| {
+        eprintln!("Could not read {}", BODY);
+        eprintln!("Error {}", e);
+        exit(1);
+    })
+}
+
+fn get_generate_release_notes() -> bool {
+    env::var(GENERATE_RELEASE_NOTES).map_or_else(
+        |e| {
+            eprintln!("Could not read {}", GENERATE_RELEASE_NOTES);
+            eprintln!("Error {}", e);
+            exit(1);
+        },
+        |v| matches!(v.to_ascii_lowercase().as_str(), "true"),
+    )
 }

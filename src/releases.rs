@@ -9,16 +9,13 @@ use reqwest::StatusCode;
 use std::process::exit;
 
 pub struct Releases<'config> {
-    _config: &'config Config,
+    config: &'config Config,
     client: GithubClient,
 }
 
 impl Releases<'_> {
     pub fn new(config: &Config, client: GithubClient) -> Releases {
-        Releases {
-            _config: config,
-            client,
-        }
+        Releases { config, client }
     }
 
     pub fn get_latest_release(&self) -> Option<TagName> {
@@ -46,12 +43,12 @@ impl Releases<'_> {
     pub fn create_release(&self, tag: &Semver) -> Option<TagName> {
         let req = CreateReleaseRequest {
             tag_name: tag.get_tag(),
-            target_commitish: "main".to_string(),
+            target_commitish: self.config.commitish.clone(),
             name: tag.get_tag(),
-            body: "".to_string(),
+            body: self.config.body.clone(),
             draft: false,
             prerelease: false,
-            generate_release_notes: true,
+            generate_release_notes: self.config.generate_release_notes,
         };
 
         let response = self.client.create_release(&req).unwrap_or_else(|e| {

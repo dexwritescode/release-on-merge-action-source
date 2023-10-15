@@ -17,6 +17,18 @@ inputs:
     description: 'Git tag prefix. Example the v in v1.2.3'
     required: false
     default: 'v'
+  target-commitish:
+    description: 'The branch that the release tag will be created on. Default main branch'
+    required: false
+    default: 'main'
+  body:
+    description: 'Body text to prepend the auto generated body'
+    required: false
+    default: ''
+  generate-release-notes:
+    description: 'Whether to generate release notes'
+    required: false
+    default: false
 outputs:
   version:
     description: 'The version number that will be created'
@@ -30,3 +42,6 @@ runs:
     - ${{ inputs.github-token }}
     - ${{ inputs.initial-version }}
     - ${{ inputs.tag-prefix }}
+    - ${{ inputs.target-commitish }}
+    - ${{ inputs.body }}
+    - ${{ inputs.generate-release-notes }}
