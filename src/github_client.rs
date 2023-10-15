@@ -59,17 +59,4 @@ impl GithubClient {
             ))
             .send()
     }
-    // pub async fn create_release(&self, tag: &Semver) -> Result<octocrab::models::repos::Release> {
-    //     self.client
-    //         .repos(&self.owner, &self.repo)
-    //         .releases()
-    //         .create(&tag.get_tag())
-    //         //.body(body)
-    //         .draft(false)
-    //         .make_latest(MakeLatest::True)
-    //         .name(&tag.get_tag())
-    //         //.target_commitish(target_commitish)
-    //         .send()
-    //         .await
-    // }
 }
