@@ -22,9 +22,9 @@ inputs:
     required: false
     default: ''
   generate-release-notes:
-    description: 'Whether to generate release notes'
+    description: 'Whether to generate release notes. Default true.'
     required: false
-    default: false
+    default: true
 outputs:
   version:
     description: 'The version number that will be created'
