@@ -2,6 +2,13 @@ use std::{env, fmt, process::exit, str::FromStr};
 
 use crate::semver::VersionIncrementStrategy;
 
+const INITIAL_VERSION: &str = "INPUT_INITIAL-VERSION";
+const GITHUB_REPOSITORY: &str = "GITHUB_REPOSITORY";
+const GITHUB_OUTPUT: &str = "GITHUB_OUTPUT";
+const GITHUB_TOKEN: &str = "INPUT_GITHUB-TOKEN";
+const TAG_PREFIX: &str = "INPUT_TAG-PREFIX";
+const GITHUB_HOST: &str = "INPUT_GITHUB-HOST";
+
 #[derive(Debug)]
 pub struct Config {
     pub github_output_path: String,
@@ -49,23 +56,19 @@ impl Config {
 }
 
 fn get_github_token() -> String {
-    match env::var("INPUT_GITHUB-TOKEN") {
-        Ok(value) => value,
-        Err(_) => {
-            eprintln!("GITHUB_TOKEN is empty!");
-            exit(1);
-        }
-    }
+    env::var(GITHUB_TOKEN).unwrap_or_else(|e| {
+        eprintln!("Could not read {}", GITHUB_TOKEN);
+        eprintln!("Error {}", e);
+        exit(1);
+    })
 }
 
 fn get_github_output_path() -> String {
-    match env::var("GITHUB_OUTPUT") {
-        Ok(value) => value,
-        Err(_) => {
-            eprintln!("Could not read GITHUB_OUTPUT");
-            exit(1);
-        }
-    }
+    env::var(GITHUB_OUTPUT).unwrap_or_else(|e| {
+        eprintln!("Could not read {}", GITHUB_OUTPUT);
+        eprintln!("Error {}", e);
+        exit(1);
+    })
 }
 
 fn get_version_increment_strategy() -> VersionIncrementStrategy {
@@ -87,28 +90,27 @@ fn get_version_increment_strategy() -> VersionIncrementStrategy {
 }
 
 fn get_default_version() -> String {
-    env::var("INPUT_INITIAL-VERSION").unwrap_or("0.1.0".to_string())
+    env::var(INITIAL_VERSION).unwrap_or("0.1.0".to_string())
 }
 
 fn get_repo_info() -> (String, String) {
-    match env::var("GITHUB_REPOSITORY") {
-        Ok(value) => {
-            let info: Vec<&str> = value.split('/').collect();
-            eprintln!("GITHUB_REPOSITORY {}", value);
-            eprintln!("Repo {:?}", info);
-            (info[0].to_owned(), info[1].to_owned())
-        }
-        Err(_) => {
-            eprintln!("GITHUB_REPOSITORY is empty!");
+    env::var(GITHUB_REPOSITORY).map_or_else(
+        |e| {
+            eprintln!("Could not read {}", GITHUB_REPOSITORY);
+            eprintln!("Error {}", e);
             exit(1);
-        }
-    }
+        },
+        |v| {
+            let repo_info = v.split('/').collect::<Vec<&str>>();
+            (repo_info[0].to_owned(), repo_info[1].to_owned())
+        },
+    )
 }
 
 fn get_tag_prefix() -> String {
-    env::var("INPUT_TAG-PREFIX").unwrap_or("v".to_string())
+    env::var(TAG_PREFIX).unwrap_or("v".to_string())
 }
 
 fn get_github_host() -> String {
-    env::var("INPUT_GITHUB-HOST").unwrap_or("https://api.github.com".to_string())
+    env::var(GITHUB_HOST).unwrap_or("https://api.github.com".to_string())
 }
