@@ -1,42 +1,30 @@
+use crate::github_client::models::CreateReleaseRequest;
+use crate::github_client::models::TagName;
 use crate::github_client::GithubClient;
 use crate::Config;
 use crate::Semver;
 
-use anyhow::Result;
 use reqwest::StatusCode;
-use serde::Deserialize;
 
 use std::process::exit;
 
-#[derive(Deserialize, Debug)]
-pub struct LatestRelease {
-    pub tag_name: String,
-}
-
 pub struct Releases<'config> {
-    _config: &'config Config,
+    config: &'config Config,
     client: GithubClient,
 }
 
 impl Releases<'_> {
     pub fn new(config: &Config, client: GithubClient) -> Releases {
-        Releases {
-            _config: config,
-            client,
-        }
+        Releases { config, client }
     }
 
-    // /repos/{owner}/{repo}/releases/latest
-    pub fn get_latest_release(&self) -> Option<LatestRelease> {
-        let latest_release_reponse = match self.client.get_latest_release() {
-            Ok(v) => v,
-            Err(err) => {
-                eprintln!("Error getting the latest release {:?}", &err.to_string());
-                exit(1);
-            }
-        };
+    pub fn get_latest_release(&self) -> Option<TagName> {
+        let latest_release_reponse = self.client.get_latest_release().unwrap_or_else(|e| {
+            eprintln!("Error getting the latest release {:?}", &e.to_string());
+            exit(1);
+        });
 
-        let latest_release: Option<LatestRelease> = match latest_release_reponse.status() {
+        let latest_release: Option<TagName> = match latest_release_reponse.status() {
             StatusCode::OK => latest_release_reponse.json().unwrap(),
             StatusCode::NOT_FOUND => None,
             StatusCode::UNAUTHORIZED => {
@@ -52,26 +40,36 @@ impl Releases<'_> {
         latest_release
     }
 
-    pub fn create_release(&self, tag: &Semver) -> Result<Semver> {
-        let _result = self.client.create_release(tag);
+    pub fn create_release(&self, tag: &Semver) -> Option<TagName> {
+        let req = CreateReleaseRequest {
+            tag_name: tag.get_tag(),
+            target_commitish: self.config.commitish.clone(),
+            name: tag.get_tag(),
+            body: self.config.body.clone(),
+            draft: false,
+            prerelease: false,
+            generate_release_notes: self.config.generate_release_notes,
+        };
 
-        //    self.client
-        //         .repos(&self.owner, &self.repo)
-        //         .releases()
-        //         .create(&tag.get_tag())
-        //         //.body(body)
-        //         .draft(false)
-        //         .make_latest(MakeLatest::True)
-        //         .name(&tag.get_tag())
-        //         //.target_commitish(target_commitish)
-        //         .send()
-        //         .await
+        let response = self.client.create_release(&req).unwrap_or_else(|e| {
+            eprintln!("Error creating release {:?}", &req);
+            eprintln!("Error {}", e);
+            exit(1);
+        });
 
-        Ok(Semver {
-            major: 1,
-            minor: 0,
-            patch: 0,
-            prefix: "v".to_string(),
-        })
+        let release: Option<TagName> = match response.status() {
+            StatusCode::CREATED => response.json().unwrap(),
+            StatusCode::UNAUTHORIZED => {
+                eprintln!("Unauthorized. Make sure you are using a valid token.");
+                exit(1);
+            }
+            s => {
+                eprintln!("Received response status {}", s);
+                eprintln!("{:?}", &response);
+                exit(1);
+            }
+        };
+
+        release
     }
 }
