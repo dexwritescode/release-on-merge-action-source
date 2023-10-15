@@ -6,6 +6,7 @@ use crate::semver::VersionIncrementStrategy;
 pub struct Config {
     pub github_output_path: String,
     pub github_token: Token,
+    pub github_host: String,
     pub increment_strategy: VersionIncrementStrategy,
     pub default_version: String,
     pub tag_prefix: String,
@@ -33,6 +34,7 @@ impl Config {
         Config {
             github_output_path: get_github_output_path(),
             github_token: Token(get_github_token()),
+            github_host: get_github_host(),
             increment_strategy: get_version_increment_strategy(),
             default_version: get_default_version(),
             tag_prefix: get_tag_prefix(),
@@ -105,4 +107,8 @@ fn get_repo_info() -> (String, String) {
 
 fn get_tag_prefix() -> String {
     env::var("INPUT_TAG-PREFIX").unwrap_or("v".to_string())
+}
+
+fn get_github_host() -> String {
+    env::var("INPUT_GITHUB-HOST").unwrap_or("https://api.github.com".to_string())
 }
