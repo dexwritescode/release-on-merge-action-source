@@ -9,7 +9,7 @@ use semver::Semver;
 pub mod releases;
 use releases::Releases;
 
-use crate::semver::VersionIncrementStrategy;
+use crate::{github_client::models::TagName, semver::VersionIncrementStrategy};
 pub mod writer;
 
 fn main() {
@@ -34,8 +34,13 @@ fn main() {
     });
     eprintln!("Incremented version {}", &new_tag);
 
-    let new_release = releases.create_release(&new_tag);
-    eprintln!("Created release {:?}", &new_release);
+    if config.dry_run {
+        eprintln!("Dry run mode active. Not creating a new release.");
+    } else {
+        eprintln!("Creating new release.");
+        let release = releases.create_release(&new_tag);
+        eprintln!("New release created {:?}", &release);
+    };
 
     let mut w = writer::Writer::new(&config.github_output_path);
     w.write("version", &new_tag.get_version());
