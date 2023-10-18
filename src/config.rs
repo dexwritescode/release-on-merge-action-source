@@ -11,6 +11,7 @@ const GITHUB_HOST: &str = "INPUT_GITHUB-HOST";
 const COMMITISH: &str = "GITHUB_SHA";
 const BODY: &str = "INPUT_BODY";
 const GENERATE_RELEASE_NOTES: &str = "INPUT_GENERATE-RELEASE-NOTES";
+const DRY_RUN: &str = "INPUT_DRY-RUN";
 
 #[derive(Debug)]
 pub struct Config {
@@ -25,6 +26,7 @@ pub struct Config {
     pub commitish: String,
     pub body: String,
     pub generate_release_notes: bool,
+    pub dry_run: bool,
 }
 
 pub struct Token(pub String);
@@ -56,6 +58,7 @@ impl Config {
             commitish: get_commitish(),
             body: get_body(),
             generate_release_notes: get_generate_release_notes(),
+            dry_run: is_dry_run(),
         }
     }
 
@@ -144,6 +147,17 @@ fn get_generate_release_notes() -> bool {
     env::var(GENERATE_RELEASE_NOTES).map_or_else(
         |e| {
             eprintln!("Could not read {}", GENERATE_RELEASE_NOTES);
+            eprintln!("Error {}", e);
+            exit(1);
+        },
+        |v| matches!(v.to_ascii_lowercase().as_str(), "true"),
+    )
+}
+
+fn is_dry_run() -> bool {
+    env::var(DRY_RUN).map_or_else(
+        |e| {
+            eprintln!("Could not read {}", DRY_RUN);
             eprintln!("Error {}", e);
             exit(1);
         },

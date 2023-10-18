@@ -25,6 +25,10 @@ inputs:
     description: 'Whether to generate release notes. Default true.'
     required: false
     default: true
+  dry-run:
+    description: 'Do not create a release, just log the oputput.'
+    required: false
+    default: false
 outputs:
   version:
     description: 'The version number that will be created'
@@ -40,3 +44,4 @@ runs:
     - ${{ inputs.tag-prefix }}
     - ${{ inputs.body }}
     - ${{ inputs.generate-release-notes }}
+    - ${{ inputs.dry-run }}

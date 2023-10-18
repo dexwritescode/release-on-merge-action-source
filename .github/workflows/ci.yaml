@@ -37,6 +37,7 @@ jobs:
       with:
         version-increment-strategy: 'patch'
         github-token: ${{ secrets.GITHUB_TOKEN }}
+        dry-run: true
     
     # Use the output from the `release` step
     - name: Get the output version  
