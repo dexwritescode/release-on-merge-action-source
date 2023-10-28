@@ -5,7 +5,7 @@ use crate::semver::VersionIncrementStrategy;
 const INITIAL_VERSION: &str = "INPUT_INITIAL-VERSION";
 const GITHUB_REPOSITORY: &str = "GITHUB_REPOSITORY";
 const GITHUB_OUTPUT: &str = "GITHUB_OUTPUT";
-const GITHUB_TOKEN: &str = "INPUT_GITHUB-TOKEN";
+const GITHUB_TOKEN: &str = "GITHUB_TOKEN";
 const TAG_PREFIX: &str = "INPUT_TAG-PREFIX";
 const GITHUB_HOST: &str = "INPUT_GITHUB-HOST";
 const COMMITISH: &str = "GITHUB_SHA";

@@ -27,6 +27,8 @@ jobs:
   build:
     permissions: write-all
     runs-on: ubuntu-latest
+    env:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
     - uses: actions/checkout@v4
 
@@ -35,8 +37,7 @@ jobs:
       id: release
       uses: ./
       with:
-        version-increment-strategy: 'patch'
-        github-token: ${{ secrets.GITHUB_TOKEN }}
+        version-increment-strategy: patch
         dry-run: true
     
     # Use the output from the `release` step
