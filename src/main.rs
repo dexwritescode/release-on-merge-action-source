@@ -9,7 +9,7 @@ use semver::Semver;
 pub mod releases;
 use releases::Releases;
 
-use crate::{github_client::models::TagName, semver::VersionIncrementStrategy};
+use crate::semver::VersionIncrementStrategy;
 pub mod writer;
 
 fn main() {
