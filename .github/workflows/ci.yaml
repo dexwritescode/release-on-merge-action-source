@@ -37,7 +37,7 @@ jobs:
       id: release
       uses: ./
       with:
-        image: Dockerfile
+        runs.image: Dockerfile
         version-increment-strategy: patch
         dry-run: true
     
