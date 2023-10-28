@@ -37,6 +37,7 @@ jobs:
       id: release
       uses: ./
       with:
+        image: Dockerfile
         version-increment-strategy: patch
         dry-run: true
     
