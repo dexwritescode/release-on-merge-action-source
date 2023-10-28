@@ -33,7 +33,7 @@ outputs:
     description: 'The version number that will be created prepended by the tag prefix'
 runs:
   using: 'docker'
-  image: 'ghcr.io/dexwritescode/release-on-merge-action:v0.1.1'
+  image: 'Dockerfile'
   args:
     - ${{ inputs.version-increment-strategy }}
     - ${{ inputs.initial-version }}
@@ -41,3 +41,7 @@ runs:
     - ${{ inputs.body }}
     - ${{ inputs.generate-release-notes }}
     - ${{ inputs.dry-run }}
+
+branding:
+  icon: 'layers'
+  color: 'green'
