@@ -10,9 +10,6 @@ inputs:
     description: 'The very first release version to create. The default Github tag will be v0.1.0'
     required: false
     default: '0.1.0'
-  github-token:
-    description: 'Github Authentication Token'
-    required: true
   tag-prefix:
     description: 'Git tag prefix. Example the v in v1.2.3'
     required: false
@@ -39,7 +36,6 @@ runs:
   image: 'Dockerfile'
   args:
     - ${{ inputs.version-increment-strategy }}
-    - ${{ inputs.github-token }}
     - ${{ inputs.initial-version }}
     - ${{ inputs.tag-prefix }}
     - ${{ inputs.body }}
