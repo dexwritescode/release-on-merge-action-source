@@ -12,6 +12,7 @@ const COMMITISH: &str = "GITHUB_SHA";
 const BODY: &str = "INPUT_BODY";
 const GENERATE_RELEASE_NOTES: &str = "INPUT_GENERATE-RELEASE-NOTES";
 const DRY_RUN: &str = "INPUT_DRY-RUN";
+const INCREMENT_STRATEGY: &str = "INPUT_VERSION-INCREMENT-STRATEGY";
 
 #[derive(Debug)]
 pub struct Config {
@@ -84,9 +85,10 @@ fn get_github_output_path() -> String {
 }
 
 fn get_version_increment_strategy() -> VersionIncrementStrategy {
-    env::var("INPUT_VERSION-INCREMENT-STRATEGY").map_or_else(
+    env::var(INCREMENT_STRATEGY).map_or_else(
         |e| {
-            eprintln!("INPUT_VERSION-INCREMENT-STRATEGY should be set {:?}", e);
+            eprintln!("Could not read {}", INCREMENT_STRATEGY);
+            eprintln!("Error {}", e);
             exit(1);
         },
         |value| {

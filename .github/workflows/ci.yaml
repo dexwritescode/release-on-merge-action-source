@@ -37,9 +37,10 @@ jobs:
       id: release
       uses: ./
       with:
-        version-increment-strategy: patch
         dry-run: true
     
     # Use the output from the `release` step
     - name: Get the output version  
-      run: echo "version ${{ steps.release.outputs.version }} - tag ${{ steps.release.outputs.tag }}"
+      run: |
+          echo "version ${{ steps.release.outputs.version }}"
+          echo "tag ${{ steps.release.outputs.tag }}"
