@@ -1,4 +1,4 @@
-FROM rust:1.72-bookworm as builder
+FROM rust:1.73-bookworm as builder
 
 RUN USER=root cargo new --bin release-on-merge-action
 WORKDIR /release-on-merge-action
