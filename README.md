@@ -1,6 +1,6 @@
 # Release on Merge Action Source
 
-[![CI](https://github.com/dexwritescode/release-on-merge-action/actions/workflows/ci.yaml/badge.svg?branch=main)](https://github.com/dexwritescode/release-on-merge-action/actions/workflows/ci.yaml)
+[![CI](https://github.com/dexwritescode/release-on-merge-action-source/actions/workflows/ci.yaml/badge.svg?branch=main)](https://github.com/dexwritescode/release-on-merge-action-source/actions/workflows/ci.yaml)
 
 Github action to create Github release on merge
 
