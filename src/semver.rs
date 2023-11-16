@@ -83,14 +83,14 @@ impl Semver {
         match strategy {
             VersionIncrementStrategy::Major => Semver {
                 major: self.major + 1,
-                minor: self.minor,
-                patch: self.patch,
+                minor: 0,
+                patch: 0,
                 prefix: self.prefix.clone(),
             },
             VersionIncrementStrategy::Minor => Semver {
                 major: self.major,
                 minor: self.minor + 1,
-                patch: self.patch,
+                patch: 0,
                 prefix: self.prefix.clone(),
             },
             VersionIncrementStrategy::Patch => Semver {
@@ -132,12 +132,7 @@ mod tests {
     #[test]
     fn increment_major() {
         let version = Semver::new(1, 2, 3, "v");
-        let expected_version = Semver::new(
-            version.major + 1,
-            version.minor,
-            version.patch,
-            &version.prefix,
-        );
+        let expected_version = Semver::new(version.major + 1, 0, 0, &version.prefix);
         let new_version = version.increment(&VersionIncrementStrategy::Major);
         assert_eq!(new_version, expected_version);
     }
@@ -145,12 +140,7 @@ mod tests {
     #[test]
     fn increment_minor() {
         let version = Semver::new(1, 2, 3, "v");
-        let expected_version = Semver::new(
-            version.major,
-            version.minor + 1,
-            version.patch,
-            &version.prefix,
-        );
+        let expected_version = Semver::new(version.major, version.minor + 1, 0, &version.prefix);
         let new_version = version.increment(&VersionIncrementStrategy::Minor);
         assert_eq!(new_version, expected_version);
     }
