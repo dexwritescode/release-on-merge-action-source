@@ -14,6 +14,8 @@ const BODY: &str = "INPUT_BODY";
 const GENERATE_RELEASE_NOTES: &str = "INPUT_GENERATE-RELEASE-NOTES";
 const DRY_RUN: &str = "INPUT_DRY-RUN";
 const INCREMENT_STRATEGY: &str = "INPUT_VERSION-INCREMENT-STRATEGY";
+const PRERELEASE: &str = "INPUT_PRERELEASE";
+const PRERELEASE_IDENTIFIER: &str = "INPUT_PRERELEASE-IDENTIFIER";
 
 #[derive(Debug)]
 pub struct Config {
@@ -29,6 +31,8 @@ pub struct Config {
     pub body: String,
     pub generate_release_notes: bool,
     pub dry_run: bool,
+    pub prerelease: bool,
+    pub prerelease_identifier: String,
 }
 
 pub struct Token(pub String);
@@ -55,6 +59,8 @@ impl Config {
             body: get_body(),
             generate_release_notes: get_generate_release_notes()?,
             dry_run: is_dry_run()?,
+            prerelease: get_prerelease(),
+            prerelease_identifier: get_prerelease_identifier(),
         })
     }
 
@@ -117,6 +123,14 @@ fn get_generate_release_notes() -> Result<bool, ActionError> {
 fn is_dry_run() -> Result<bool, ActionError> {
     let v = require_env(DRY_RUN)?;
     Ok(matches!(v.to_ascii_lowercase().as_str(), "true"))
+}
+
+fn get_prerelease() -> bool {
+    env::var(PRERELEASE).map_or(false, |v| matches!(v.to_ascii_lowercase().as_str(), "true"))
+}
+
+fn get_prerelease_identifier() -> String {
+    env::var(PRERELEASE_IDENTIFIER).unwrap_or_else(|_| "rc".to_string())
 }
 
 #[cfg(test)]

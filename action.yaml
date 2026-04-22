@@ -30,6 +30,14 @@ inputs:
     description: 'GitHub API host. Override for GitHub Enterprise (e.g. https://github.example.com/api/v3). Defaults to https://api.github.com.'
     required: false
     default: 'https://api.github.com'
+  prerelease:
+    description: 'Create a pre-release instead of a stable release.'
+    required: false
+    default: false
+  prerelease-identifier:
+    description: 'Pre-release identifier appended to the version (e.g. "beta" produces v1.2.0-beta.1). Defaults to rc.'
+    required: false
+    default: 'rc'
 outputs:
   version:
     description: 'The version number that will be created'

@@ -18,8 +18,8 @@ fn run() -> Result<(), ActionError> {
     let config = Config::new()?;
     eprintln!("Config: {:?}", &config);
 
-    if config.increment_strategy == VersionIncrementStrategy::NoRelease {
-        eprintln!("Increment strategy NoRelease - exiting");
+    if config.increment_strategy == VersionIncrementStrategy::NoRelease && !config.prerelease {
+        eprintln!("NoRelease strategy — skipping release creation");
         return Ok(());
     }
 
@@ -32,13 +32,30 @@ fn run() -> Result<(), ActionError> {
     let default_tag = Semver::from_str(&config.get_default_tag())
         .map_err(|_| ActionError::InvalidTag(config.get_default_tag()))?;
 
-    let new_tag = match latest_release {
-        None => default_tag,
-        Some(v) => Semver::from_str(&v.tag_name)
-            .map_err(|_| ActionError::InvalidTag(v.tag_name.clone()))?
-            .increment(&config.increment_strategy),
+    let latest_semver = latest_release
+        .map(|v| {
+            Semver::from_str(&v.tag_name)
+                .map_err(|_| ActionError::InvalidTag(v.tag_name.clone()))
+        })
+        .transpose()?;
+
+    let new_tag = if config.prerelease {
+        let id = &config.prerelease_identifier;
+        match latest_semver {
+            None => default_tag.with_pre_release(id, 1),
+            Some(ref v) if v.pre_release_matches(id) => v.bump_pre_release(),
+            Some(ref v) => v
+                .base_version()
+                .increment(&config.increment_strategy)
+                .with_pre_release(id, 1),
+        }
+    } else {
+        match latest_semver {
+            None => default_tag,
+            Some(v) => v.base_version().increment(&config.increment_strategy),
+        }
     };
-    eprintln!("Incremented version {}", &new_tag);
+    eprintln!("New version: {}", &new_tag);
 
     if config.dry_run {
         eprintln!("Dry run mode active. Not creating a new release.");

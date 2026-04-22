@@ -25,7 +25,7 @@ impl<C: GithubApi> Releases<'_, C> {
             name: tag.to_string(),
             body: self.config.body.clone(),
             draft: false,
-            prerelease: false,
+            prerelease: self.config.prerelease,
             generate_release_notes: self.config.generate_release_notes,
         };
         self.client.create_release(&req)
@@ -96,6 +96,8 @@ mod tests {
             body: "release body".to_string(),
             generate_release_notes: true,
             dry_run: false,
+            prerelease: false,
+            prerelease_identifier: "rc".to_string(),
         }
     }
 
@@ -139,7 +141,7 @@ mod tests {
         assert_eq!(req.body, "release body");
         assert!(req.generate_release_notes);
         assert!(!req.draft);
-        assert!(!req.prerelease);
+        assert!(!req.prerelease); // config.prerelease is false in test_config()
     }
 
     #[test]
