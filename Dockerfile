@@ -1,4 +1,4 @@
-FROM rust:1.73-bookworm as builder
+FROM rust:1.95.0-bookworm as builder
 
 WORKDIR /release-on-merge-action
 COPY . .

@@ -42,9 +42,9 @@ impl Releases<'_> {
 
     pub fn create_release(&self, tag: &Semver) -> Option<TagName> {
         let req = CreateReleaseRequest {
-            tag_name: tag.get_tag(),
+            tag_name: tag.to_string(),
             target_commitish: self.config.commitish.clone(),
-            name: tag.get_tag(),
+            name: tag.to_string(),
             body: self.config.body.clone(),
             draft: false,
             prerelease: false,

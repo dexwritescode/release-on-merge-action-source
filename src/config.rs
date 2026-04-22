@@ -138,11 +138,7 @@ fn get_commitish() -> String {
 }
 
 fn get_body() -> String {
-    env::var(BODY).unwrap_or_else(|e| {
-        eprintln!("Could not read {}", BODY);
-        eprintln!("Error {}", e);
-        exit(1);
-    })
+    env::var(BODY).unwrap_or_default()
 }
 
 fn get_generate_release_notes() -> bool {
