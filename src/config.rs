@@ -14,6 +14,13 @@ const BODY: &str = "INPUT_BODY";
 const GENERATE_RELEASE_NOTES: &str = "INPUT_GENERATE-RELEASE-NOTES";
 const DRY_RUN: &str = "INPUT_DRY-RUN";
 const INCREMENT_STRATEGY: &str = "INPUT_VERSION-INCREMENT-STRATEGY";
+const PRERELEASE: &str = "INPUT_PRERELEASE";
+const PRERELEASE_IDENTIFIER: &str = "INPUT_PRERELEASE-IDENTIFIER";
+const USE_LABEL_STRATEGY: &str = "INPUT_USE-LABEL-STRATEGY";
+const LABEL_MAJOR: &str = "INPUT_LABEL-MAJOR";
+const LABEL_MINOR: &str = "INPUT_LABEL-MINOR";
+const LABEL_PATCH: &str = "INPUT_LABEL-PATCH";
+const LABEL_SKIP: &str = "INPUT_LABEL-SKIP";
 
 #[derive(Debug)]
 pub struct Config {
@@ -29,6 +36,13 @@ pub struct Config {
     pub body: String,
     pub generate_release_notes: bool,
     pub dry_run: bool,
+    pub prerelease: bool,
+    pub prerelease_identifier: String,
+    pub use_label_strategy: bool,
+    pub label_major: String,
+    pub label_minor: String,
+    pub label_patch: String,
+    pub label_skip: String,
 }
 
 pub struct Token(pub String);
@@ -55,6 +69,13 @@ impl Config {
             body: get_body(),
             generate_release_notes: get_generate_release_notes()?,
             dry_run: is_dry_run()?,
+            prerelease: get_prerelease(),
+            prerelease_identifier: get_prerelease_identifier(),
+            use_label_strategy: get_use_label_strategy(),
+            label_major: get_label(LABEL_MAJOR, "release:major"),
+            label_minor: get_label(LABEL_MINOR, "release:minor"),
+            label_patch: get_label(LABEL_PATCH, "release:patch"),
+            label_skip: get_label(LABEL_SKIP, "release:skip"),
         })
     }
 
@@ -117,4 +138,124 @@ fn get_generate_release_notes() -> Result<bool, ActionError> {
 fn is_dry_run() -> Result<bool, ActionError> {
     let v = require_env(DRY_RUN)?;
     Ok(matches!(v.to_ascii_lowercase().as_str(), "true"))
+}
+
+fn get_prerelease() -> bool {
+    env::var(PRERELEASE).map_or(false, |v| matches!(v.to_ascii_lowercase().as_str(), "true"))
+}
+
+fn get_prerelease_identifier() -> String {
+    env::var(PRERELEASE_IDENTIFIER).unwrap_or_else(|_| "rc".to_string())
+}
+
+fn get_use_label_strategy() -> bool {
+    env::var(USE_LABEL_STRATEGY).map_or(false, |v| matches!(v.to_ascii_lowercase().as_str(), "true"))
+}
+
+fn get_label(var: &'static str, default: &str) -> String {
+    env::var(var).unwrap_or_else(|_| default.to_string())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::sync::Mutex;
+
+    static ENV_LOCK: Mutex<()> = Mutex::new(());
+
+    fn set_required_env() {
+        std::env::set_var("GITHUB_REPOSITORY", "owner/repo");
+        std::env::set_var("GITHUB_OUTPUT", "/tmp/output");
+        std::env::set_var("GITHUB_TOKEN", "test-token");
+        std::env::set_var("GITHUB_SHA", "abc123");
+        std::env::set_var("INPUT_VERSION-INCREMENT-STRATEGY", "patch");
+        std::env::set_var("INPUT_GENERATE-RELEASE-NOTES", "true");
+        std::env::set_var("INPUT_DRY-RUN", "false");
+    }
+
+    fn clear_env() {
+        for var in &[
+            "GITHUB_REPOSITORY",
+            "GITHUB_OUTPUT",
+            "GITHUB_TOKEN",
+            "GITHUB_SHA",
+            "INPUT_VERSION-INCREMENT-STRATEGY",
+            "INPUT_GENERATE-RELEASE-NOTES",
+            "INPUT_DRY-RUN",
+            "INPUT_INITIAL-VERSION",
+            "INPUT_TAG-PREFIX",
+            "INPUT_BODY",
+            "INPUT_GITHUB-HOST",
+        ] {
+            std::env::remove_var(var);
+        }
+    }
+
+    #[test]
+    fn config_new_parses_required_fields() {
+        let _lock = ENV_LOCK.lock().unwrap();
+        set_required_env();
+        let config = Config::new().unwrap();
+        assert_eq!(config.owner, "owner");
+        assert_eq!(config.repo, "repo");
+        assert_eq!(config.commitish, "abc123");
+        assert_eq!(config.github_output_path, "/tmp/output");
+        assert_eq!(config.tag_prefix, "v");
+        assert_eq!(config.default_version, "0.1.0");
+        assert_eq!(config.github_host, "https://api.github.com");
+        assert!(!config.dry_run);
+        assert!(config.generate_release_notes);
+        clear_env();
+    }
+
+    #[test]
+    fn config_missing_token_returns_error() {
+        let _lock = ENV_LOCK.lock().unwrap();
+        set_required_env();
+        std::env::remove_var("GITHUB_TOKEN");
+        let err = Config::new().unwrap_err();
+        assert_eq!(err, ActionError::MissingEnv("GITHUB_TOKEN"));
+        clear_env();
+    }
+
+    #[test]
+    fn config_missing_repository_returns_error() {
+        let _lock = ENV_LOCK.lock().unwrap();
+        set_required_env();
+        std::env::remove_var("GITHUB_REPOSITORY");
+        let err = Config::new().unwrap_err();
+        assert_eq!(err, ActionError::MissingEnv("GITHUB_REPOSITORY"));
+        clear_env();
+    }
+
+    #[test]
+    fn config_invalid_strategy_returns_error() {
+        let _lock = ENV_LOCK.lock().unwrap();
+        set_required_env();
+        std::env::set_var("INPUT_VERSION-INCREMENT-STRATEGY", "bogus");
+        let err = Config::new().unwrap_err();
+        assert!(matches!(err, ActionError::InvalidStrategy(_)));
+        clear_env();
+    }
+
+    #[test]
+    fn config_custom_prefix_and_initial_version() {
+        let _lock = ENV_LOCK.lock().unwrap();
+        set_required_env();
+        std::env::set_var("INPUT_TAG-PREFIX", "release-");
+        std::env::set_var("INPUT_INITIAL-VERSION", "2.0.0");
+        let config = Config::new().unwrap();
+        assert_eq!(config.get_default_tag(), "release-2.0.0");
+        clear_env();
+    }
+
+    #[test]
+    fn config_dry_run_parsed_correctly() {
+        let _lock = ENV_LOCK.lock().unwrap();
+        set_required_env();
+        std::env::set_var("INPUT_DRY-RUN", "true");
+        let config = Config::new().unwrap();
+        assert!(config.dry_run);
+        clear_env();
+    }
 }

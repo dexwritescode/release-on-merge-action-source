@@ -1,6 +1,6 @@
 use std::fmt;
 
-#[derive(Debug)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum ActionError {
     MissingEnv(&'static str),
     InvalidStrategy(String),
