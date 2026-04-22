@@ -1,6 +1,11 @@
 use regex::Regex;
 use std::fmt;
 use std::str::FromStr;
+use std::sync::LazyLock;
+
+static SEMVER_RE: LazyLock<Regex> = LazyLock::new(|| {
+    Regex::new(r"^(?P<prefix>[a-zA-Z]*)(?P<major>0|[1-9]\d*)\.(?P<minor>0|[1-9]\d*)\.(?P<patch>0|[1-9]\d*)$").unwrap()
+});
 
 #[derive(Debug, PartialEq)]
 pub enum VersionIncrementStrategy {
@@ -57,8 +62,7 @@ impl FromStr for Semver {
     type Err = ();
 
     fn from_str(s: &str) -> std::result::Result<Self, Self::Err> {
-        let re = Regex::new(r"^(?P<prefix>[a-zA-Z]*)(?P<major>0|[1-9]\d*)\.(?P<minor>0|[1-9]\d*)\.(?P<patch>0|[1-9]\d*)$").unwrap();
-        let Some(caps) = re.captures(s) else {
+        let Some(caps) = SEMVER_RE.captures(s) else {
             return Err(());
         };
         let prefix: String = caps["prefix"].into();
@@ -105,13 +109,6 @@ impl Semver {
 
     pub fn get_version(&self) -> String {
         format!("{}.{}.{}", self.major, self.minor, self.patch)
-    }
-
-    pub fn get_tag(&self) -> String {
-        format!(
-            "{}{}.{}.{}",
-            self.prefix, self.major, self.minor, self.patch
-        )
     }
 }
 
@@ -162,22 +159,18 @@ mod tests {
     fn to_string() {
         let version = Semver::new(12, 20, 3, "ver");
         assert_eq!(version.to_string(), "ver12.20.3");
-        assert_eq!(version.get_tag(), "ver12.20.3");
         assert_eq!(version.get_version(), "12.20.3");
 
         let version2 = Semver::new(1, 0, 3, "v");
         assert_eq!(version2.to_string(), "v1.0.3");
-        assert_eq!(version2.get_tag(), "v1.0.3");
         assert_eq!(version2.get_version(), "1.0.3");
 
         let version3 = Semver::new(0, 1, 0, "V");
         assert_eq!(version3.to_string(), "V0.1.0");
-        assert_eq!(version3.get_tag(), "V0.1.0");
         assert_eq!(version3.get_version(), "0.1.0");
 
         let version4 = Semver::new(0, 1, 0, "");
         assert_eq!(version4.to_string(), "0.1.0");
-        assert_eq!(version4.get_tag(), "0.1.0");
         assert_eq!(version4.get_version(), "0.1.0");
     }
 

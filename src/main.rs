@@ -44,5 +44,5 @@ fn main() {
 
     let mut w = writer::Writer::new(&config.github_output_path);
     w.write("version", &new_tag.get_version());
-    w.write("tag", &new_tag.get_tag());
+    w.write("tag", &new_tag.to_string());
 }

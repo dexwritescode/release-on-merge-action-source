@@ -26,6 +26,10 @@ inputs:
     description: 'Do not create a release, just log the oputput.'
     required: false
     default: false
+  github-host:
+    description: 'GitHub API host. Override for GitHub Enterprise (e.g. https://github.example.com/api/v3). Defaults to https://api.github.com.'
+    required: false
+    default: 'https://api.github.com'
 outputs:
   version:
     description: 'The version number that will be created'
