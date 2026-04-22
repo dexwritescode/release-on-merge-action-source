@@ -187,4 +187,15 @@ mod tests {
         );
         assert_eq!(Semver::from_str("0.1.0").unwrap().to_string(), "0.1.0");
     }
+
+    #[test]
+    fn from_str_invalid_returns_err() {
+        assert!(Semver::from_str("").is_err());
+        assert!(Semver::from_str("not-a-version").is_err());
+        assert!(Semver::from_str("1.2").is_err());
+        assert!(Semver::from_str("1.2.3.4").is_err());
+        assert!(Semver::from_str("v1.2.3-beta").is_err()); // pre-release suffix not supported
+        assert!(Semver::from_str("v01.2.3").is_err());     // leading zero on major
+        assert!(Semver::from_str("v1.02.3").is_err());     // leading zero on minor
+    }
 }

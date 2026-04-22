@@ -1,10 +1,17 @@
-use self::models::CreateReleaseRequest;
+use self::models::{CreateReleaseRequest, TagName};
+use crate::error::ActionError;
 use crate::Config;
 
 use reqwest::blocking::Client;
-use reqwest::blocking::Response;
 use reqwest::header;
-use reqwest::Error;
+use reqwest::StatusCode;
+
+pub mod models;
+
+pub trait GithubApi {
+    fn get_latest_release(&self) -> Result<Option<TagName>, ActionError>;
+    fn create_release(&self, request: &CreateReleaseRequest) -> Result<Option<TagName>, ActionError>;
+}
 
 pub struct GithubClient {
     client: Client,
@@ -12,8 +19,6 @@ pub struct GithubClient {
     owner: String,
     github_host: String,
 }
-
-pub mod models;
 
 impl GithubClient {
     pub fn new(config: &Config) -> GithubClient {
@@ -41,25 +46,48 @@ impl GithubClient {
             github_host: config.github_host.clone(),
         }
     }
+}
 
+impl GithubApi for GithubClient {
     // GET /repos/{owner}/{repo}/releases/latest
-    pub fn get_latest_release(&self) -> Result<Response, Error> {
-        self.client
+    fn get_latest_release(&self) -> Result<Option<TagName>, ActionError> {
+        let response = self
+            .client
             .get(format!(
                 "{}/repos/{}/{}/releases/latest",
                 self.github_host, self.owner, self.repo
             ))
             .send()
+            .map_err(|e| ActionError::ApiError(e.to_string()))?;
+
+        match response.status() {
+            StatusCode::OK => response
+                .json()
+                .map_err(|e| ActionError::ApiError(e.to_string())),
+            StatusCode::NOT_FOUND => Ok(None),
+            StatusCode::UNAUTHORIZED => Err(ActionError::Unauthorized),
+            s => Err(ActionError::UnexpectedStatus(s.as_u16())),
+        }
     }
 
     // POST /repos/{owner}/{repo}/releases
-    pub fn create_release(&self, request: &CreateReleaseRequest) -> Result<Response, Error> {
-        self.client
+    fn create_release(&self, request: &CreateReleaseRequest) -> Result<Option<TagName>, ActionError> {
+        let response = self
+            .client
             .post(format!(
                 "{}/repos/{}/{}/releases",
                 self.github_host, self.owner, self.repo
             ))
             .json(request)
             .send()
+            .map_err(|e| ActionError::ApiError(e.to_string()))?;
+
+        match response.status() {
+            StatusCode::CREATED => response
+                .json()
+                .map_err(|e| ActionError::ApiError(e.to_string())),
+            StatusCode::UNAUTHORIZED => Err(ActionError::Unauthorized),
+            s => Err(ActionError::UnexpectedStatus(s.as_u16())),
+        }
     }
 }

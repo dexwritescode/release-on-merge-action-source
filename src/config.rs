@@ -118,3 +118,107 @@ fn is_dry_run() -> Result<bool, ActionError> {
     let v = require_env(DRY_RUN)?;
     Ok(matches!(v.to_ascii_lowercase().as_str(), "true"))
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::sync::Mutex;
+
+    static ENV_LOCK: Mutex<()> = Mutex::new(());
+
+    fn set_required_env() {
+        std::env::set_var("GITHUB_REPOSITORY", "owner/repo");
+        std::env::set_var("GITHUB_OUTPUT", "/tmp/output");
+        std::env::set_var("GITHUB_TOKEN", "test-token");
+        std::env::set_var("GITHUB_SHA", "abc123");
+        std::env::set_var("INPUT_VERSION-INCREMENT-STRATEGY", "patch");
+        std::env::set_var("INPUT_GENERATE-RELEASE-NOTES", "true");
+        std::env::set_var("INPUT_DRY-RUN", "false");
+    }
+
+    fn clear_env() {
+        for var in &[
+            "GITHUB_REPOSITORY",
+            "GITHUB_OUTPUT",
+            "GITHUB_TOKEN",
+            "GITHUB_SHA",
+            "INPUT_VERSION-INCREMENT-STRATEGY",
+            "INPUT_GENERATE-RELEASE-NOTES",
+            "INPUT_DRY-RUN",
+            "INPUT_INITIAL-VERSION",
+            "INPUT_TAG-PREFIX",
+            "INPUT_BODY",
+            "INPUT_GITHUB-HOST",
+        ] {
+            std::env::remove_var(var);
+        }
+    }
+
+    #[test]
+    fn config_new_parses_required_fields() {
+        let _lock = ENV_LOCK.lock().unwrap();
+        set_required_env();
+        let config = Config::new().unwrap();
+        assert_eq!(config.owner, "owner");
+        assert_eq!(config.repo, "repo");
+        assert_eq!(config.commitish, "abc123");
+        assert_eq!(config.github_output_path, "/tmp/output");
+        assert_eq!(config.tag_prefix, "v");
+        assert_eq!(config.default_version, "0.1.0");
+        assert_eq!(config.github_host, "https://api.github.com");
+        assert!(!config.dry_run);
+        assert!(config.generate_release_notes);
+        clear_env();
+    }
+
+    #[test]
+    fn config_missing_token_returns_error() {
+        let _lock = ENV_LOCK.lock().unwrap();
+        set_required_env();
+        std::env::remove_var("GITHUB_TOKEN");
+        let err = Config::new().unwrap_err();
+        assert_eq!(err, ActionError::MissingEnv("GITHUB_TOKEN"));
+        clear_env();
+    }
+
+    #[test]
+    fn config_missing_repository_returns_error() {
+        let _lock = ENV_LOCK.lock().unwrap();
+        set_required_env();
+        std::env::remove_var("GITHUB_REPOSITORY");
+        let err = Config::new().unwrap_err();
+        assert_eq!(err, ActionError::MissingEnv("GITHUB_REPOSITORY"));
+        clear_env();
+    }
+
+    #[test]
+    fn config_invalid_strategy_returns_error() {
+        let _lock = ENV_LOCK.lock().unwrap();
+        set_required_env();
+        std::env::set_var("INPUT_VERSION-INCREMENT-STRATEGY", "bogus");
+        let err = Config::new().unwrap_err();
+        assert!(matches!(err, ActionError::InvalidStrategy(_)));
+        clear_env();
+    }
+
+    #[test]
+    fn config_custom_prefix_and_initial_version() {
+        let _lock = ENV_LOCK.lock().unwrap();
+        set_required_env();
+        std::env::set_var("INPUT_TAG-PREFIX", "release-");
+        std::env::set_var("INPUT_INITIAL-VERSION", "2.0.0");
+        let config = Config::new().unwrap();
+        assert_eq!(config.get_default_tag(), "release-2.0.0");
+        clear_env();
+    }
+
+    #[test]
+    fn config_dry_run_parsed_correctly() {
+        let _lock = ENV_LOCK.lock().unwrap();
+        set_required_env();
+        std::env::set_var("INPUT_DRY-RUN", "true");
+        let config = Config::new().unwrap();
+        assert!(config.dry_run);
+        clear_env();
+    }
+}
