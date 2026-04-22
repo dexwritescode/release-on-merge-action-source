@@ -16,3 +16,13 @@ pub struct CreateReleaseRequest {
     pub prerelease: bool,
     pub generate_release_notes: bool,
 }
+
+#[derive(Deserialize, Debug, Clone)]
+pub struct Label {
+    pub name: String,
+}
+
+#[derive(Deserialize, Debug, Clone)]
+pub struct PullRequest {
+    pub labels: Vec<Label>,
+}

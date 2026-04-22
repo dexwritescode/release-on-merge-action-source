@@ -16,6 +16,11 @@ const DRY_RUN: &str = "INPUT_DRY-RUN";
 const INCREMENT_STRATEGY: &str = "INPUT_VERSION-INCREMENT-STRATEGY";
 const PRERELEASE: &str = "INPUT_PRERELEASE";
 const PRERELEASE_IDENTIFIER: &str = "INPUT_PRERELEASE-IDENTIFIER";
+const USE_LABEL_STRATEGY: &str = "INPUT_USE-LABEL-STRATEGY";
+const LABEL_MAJOR: &str = "INPUT_LABEL-MAJOR";
+const LABEL_MINOR: &str = "INPUT_LABEL-MINOR";
+const LABEL_PATCH: &str = "INPUT_LABEL-PATCH";
+const LABEL_SKIP: &str = "INPUT_LABEL-SKIP";
 
 #[derive(Debug)]
 pub struct Config {
@@ -33,6 +38,11 @@ pub struct Config {
     pub dry_run: bool,
     pub prerelease: bool,
     pub prerelease_identifier: String,
+    pub use_label_strategy: bool,
+    pub label_major: String,
+    pub label_minor: String,
+    pub label_patch: String,
+    pub label_skip: String,
 }
 
 pub struct Token(pub String);
@@ -61,6 +71,11 @@ impl Config {
             dry_run: is_dry_run()?,
             prerelease: get_prerelease(),
             prerelease_identifier: get_prerelease_identifier(),
+            use_label_strategy: get_use_label_strategy(),
+            label_major: get_label(LABEL_MAJOR, "release:major"),
+            label_minor: get_label(LABEL_MINOR, "release:minor"),
+            label_patch: get_label(LABEL_PATCH, "release:patch"),
+            label_skip: get_label(LABEL_SKIP, "release:skip"),
         })
     }
 
@@ -131,6 +146,14 @@ fn get_prerelease() -> bool {
 
 fn get_prerelease_identifier() -> String {
     env::var(PRERELEASE_IDENTIFIER).unwrap_or_else(|_| "rc".to_string())
+}
+
+fn get_use_label_strategy() -> bool {
+    env::var(USE_LABEL_STRATEGY).map_or(false, |v| matches!(v.to_ascii_lowercase().as_str(), "true"))
+}
+
+fn get_label(var: &'static str, default: &str) -> String {
+    env::var(var).unwrap_or_else(|_| default.to_string())
 }
 
 #[cfg(test)]

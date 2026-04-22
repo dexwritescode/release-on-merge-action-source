@@ -1,5 +1,5 @@
 use crate::error::ActionError;
-use crate::github_client::models::{CreateReleaseRequest, TagName};
+use crate::github_client::models::{CreateReleaseRequest, PullRequest, TagName};
 use crate::github_client::GithubApi;
 use crate::Config;
 use crate::Semver;
@@ -30,12 +30,17 @@ impl<C: GithubApi> Releases<'_, C> {
         };
         self.client.create_release(&req)
     }
+
+    pub fn get_pr_for_commit(&self, sha: &str) -> Result<Option<PullRequest>, ActionError> {
+        self.client.get_pr_for_commit(sha)
+    }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
     use crate::config::Token;
+    use crate::github_client::models::Label;
     use crate::semver::VersionIncrementStrategy;
     use std::cell::RefCell;
 
@@ -43,6 +48,7 @@ mod tests {
         latest: Result<Option<TagName>, ActionError>,
         captured_request: RefCell<Option<CreateReleaseRequest>>,
         create_response: Result<Option<TagName>, ActionError>,
+        pr_response: Result<Option<PullRequest>, ActionError>,
     }
 
     impl MockGithubApi {
@@ -51,6 +57,7 @@ mod tests {
                 latest: Ok(Some(TagName { tag_name: tag.to_string() })),
                 captured_request: RefCell::new(None),
                 create_response: Ok(Some(TagName { tag_name: tag.to_string() })),
+                pr_response: Ok(None),
             }
         }
 
@@ -59,6 +66,7 @@ mod tests {
                 latest: Ok(None),
                 captured_request: RefCell::new(None),
                 create_response: Ok(Some(TagName { tag_name: "v0.1.0".to_string() })),
+                pr_response: Ok(None),
             }
         }
 
@@ -67,7 +75,15 @@ mod tests {
                 latest: Err(err.clone()),
                 captured_request: RefCell::new(None),
                 create_response: Err(err),
+                pr_response: Ok(None),
             }
+        }
+
+        fn with_pr_labels(mut self, labels: &[&str]) -> Self {
+            self.pr_response = Ok(Some(PullRequest {
+                labels: labels.iter().map(|n| Label { name: n.to_string() }).collect(),
+            }));
+            self
         }
     }
 
@@ -79,6 +95,10 @@ mod tests {
         fn create_release(&self, request: &CreateReleaseRequest) -> Result<Option<TagName>, ActionError> {
             *self.captured_request.borrow_mut() = Some(request.clone());
             self.create_response.clone()
+        }
+
+        fn get_pr_for_commit(&self, _sha: &str) -> Result<Option<PullRequest>, ActionError> {
+            self.pr_response.clone()
         }
     }
 
@@ -98,6 +118,11 @@ mod tests {
             dry_run: false,
             prerelease: false,
             prerelease_identifier: "rc".to_string(),
+            use_label_strategy: false,
+            label_major: "release:major".to_string(),
+            label_minor: "release:minor".to_string(),
+            label_patch: "release:patch".to_string(),
+            label_skip: "release:skip".to_string(),
         }
     }
 
@@ -153,5 +178,22 @@ mod tests {
             releases.create_release(&tag).unwrap_err(),
             ActionError::UnexpectedStatus(500)
         );
+    }
+
+    #[test]
+    fn get_pr_for_commit_returns_pr_with_labels() {
+        let config = test_config();
+        let mock = MockGithubApi::with_no_release().with_pr_labels(&["release:minor", "bug"]);
+        let releases = Releases::new(&config, mock);
+        let pr = releases.get_pr_for_commit("abc123").unwrap().unwrap();
+        assert_eq!(pr.labels.len(), 2);
+        assert_eq!(pr.labels[0].name, "release:minor");
+    }
+
+    #[test]
+    fn get_pr_for_commit_returns_none_when_no_pr() {
+        let config = test_config();
+        let releases = Releases::new(&config, MockGithubApi::with_no_release());
+        assert!(releases.get_pr_for_commit("abc123").unwrap().is_none());
     }
 }

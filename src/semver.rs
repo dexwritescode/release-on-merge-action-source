@@ -10,7 +10,7 @@ static SEMVER_RE: LazyLock<Regex> = LazyLock::new(|| {
     .unwrap()
 });
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum VersionIncrementStrategy {
     Major,
     Minor,

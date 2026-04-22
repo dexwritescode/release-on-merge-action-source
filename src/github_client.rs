@@ -1,4 +1,4 @@
-use self::models::{CreateReleaseRequest, TagName};
+use self::models::{CreateReleaseRequest, PullRequest, TagName};
 use crate::error::ActionError;
 use crate::Config;
 
@@ -11,6 +11,7 @@ pub mod models;
 pub trait GithubApi {
     fn get_latest_release(&self) -> Result<Option<TagName>, ActionError>;
     fn create_release(&self, request: &CreateReleaseRequest) -> Result<Option<TagName>, ActionError>;
+    fn get_pr_for_commit(&self, sha: &str) -> Result<Option<PullRequest>, ActionError>;
 }
 
 pub struct GithubClient {
@@ -86,6 +87,30 @@ impl GithubApi for GithubClient {
             StatusCode::CREATED => response
                 .json()
                 .map_err(|e| ActionError::ApiError(e.to_string())),
+            StatusCode::UNAUTHORIZED => Err(ActionError::Unauthorized),
+            s => Err(ActionError::UnexpectedStatus(s.as_u16())),
+        }
+    }
+
+    // GET /repos/{owner}/{repo}/commits/{sha}/pulls
+    fn get_pr_for_commit(&self, sha: &str) -> Result<Option<PullRequest>, ActionError> {
+        let response = self
+            .client
+            .get(format!(
+                "{}/repos/{}/{}/commits/{}/pulls",
+                self.github_host, self.owner, self.repo, sha
+            ))
+            .send()
+            .map_err(|e| ActionError::ApiError(e.to_string()))?;
+
+        match response.status() {
+            StatusCode::OK => {
+                let prs: Vec<PullRequest> = response
+                    .json()
+                    .map_err(|e| ActionError::ApiError(e.to_string()))?;
+                Ok(prs.into_iter().next())
+            }
+            StatusCode::NOT_FOUND => Ok(None),
             StatusCode::UNAUTHORIZED => Err(ActionError::Unauthorized),
             s => Err(ActionError::UnexpectedStatus(s.as_u16())),
         }
