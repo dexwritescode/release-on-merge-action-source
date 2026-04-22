@@ -1,5 +1,6 @@
-use std::{env, fmt, process::exit, str::FromStr};
+use std::{env, fmt, str::FromStr};
 
+use crate::error::ActionError;
 use crate::semver::VersionIncrementStrategy;
 
 const INITIAL_VERSION: &str = "INPUT_INITIAL-VERSION";
@@ -38,29 +39,23 @@ impl fmt::Debug for Token {
     }
 }
 
-impl Default for Config {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
 impl Config {
-    pub fn new() -> Config {
-        let (owner, repo) = get_repo_info();
-        Config {
-            github_output_path: get_github_output_path(),
-            github_token: Token(get_github_token()),
+    pub fn new() -> Result<Config, ActionError> {
+        let (owner, repo) = get_repo_info()?;
+        Ok(Config {
+            github_output_path: get_github_output_path()?,
+            github_token: Token(get_github_token()?),
             github_host: get_github_host(),
-            increment_strategy: get_version_increment_strategy(),
+            increment_strategy: get_version_increment_strategy()?,
             default_version: get_default_version(),
             tag_prefix: get_tag_prefix(),
             repo,
             owner,
-            commitish: get_commitish(),
+            commitish: get_commitish()?,
             body: get_body(),
-            generate_release_notes: get_generate_release_notes(),
-            dry_run: is_dry_run(),
-        }
+            generate_release_notes: get_generate_release_notes()?,
+            dry_run: is_dry_run()?,
+        })
     }
 
     pub fn get_default_tag(&self) -> String {
@@ -68,97 +63,58 @@ impl Config {
     }
 }
 
-fn get_github_token() -> String {
-    env::var(GITHUB_TOKEN).unwrap_or_else(|e| {
-        eprintln!("Could not read {}", GITHUB_TOKEN);
-        eprintln!("Error {}", e);
-        exit(1);
-    })
+fn require_env(var: &'static str) -> Result<String, ActionError> {
+    env::var(var).map_err(|_| ActionError::MissingEnv(var))
 }
 
-fn get_github_output_path() -> String {
-    env::var(GITHUB_OUTPUT).unwrap_or_else(|e| {
-        eprintln!("Could not read {}", GITHUB_OUTPUT);
-        eprintln!("Error {}", e);
-        exit(1);
-    })
+fn get_github_token() -> Result<String, ActionError> {
+    require_env(GITHUB_TOKEN)
 }
 
-fn get_version_increment_strategy() -> VersionIncrementStrategy {
-    env::var(INCREMENT_STRATEGY).map_or_else(
-        |e| {
-            eprintln!("Could not read {}", INCREMENT_STRATEGY);
-            eprintln!("Error {}", e);
-            exit(1);
-        },
-        |value| {
-            VersionIncrementStrategy::from_str(&value).map_or_else(
-                |_| {
-                    eprintln!("Invalid version-increment-strategy value: {}", value);
-                    exit(1);
-                },
-                |vis| vis,
-            )
-        },
-    )
+fn get_github_output_path() -> Result<String, ActionError> {
+    require_env(GITHUB_OUTPUT)
+}
+
+fn get_version_increment_strategy() -> Result<VersionIncrementStrategy, ActionError> {
+    let value = require_env(INCREMENT_STRATEGY)?;
+    VersionIncrementStrategy::from_str(&value)
+        .map_err(|_| ActionError::InvalidStrategy(value))
 }
 
 fn get_default_version() -> String {
-    env::var(INITIAL_VERSION).unwrap_or("0.1.0".to_string())
+    env::var(INITIAL_VERSION).unwrap_or_else(|_| "0.1.0".to_string())
 }
 
-fn get_repo_info() -> (String, String) {
-    env::var(GITHUB_REPOSITORY).map_or_else(
-        |e| {
-            eprintln!("Could not read {}", GITHUB_REPOSITORY);
-            eprintln!("Error {}", e);
-            exit(1);
-        },
-        |v| {
-            let repo_info = v.split('/').collect::<Vec<&str>>();
-            (repo_info[0].to_owned(), repo_info[1].to_owned())
-        },
-    )
+fn get_repo_info() -> Result<(String, String), ActionError> {
+    let v = require_env(GITHUB_REPOSITORY)?;
+    let mut parts = v.splitn(2, '/');
+    let owner = parts.next().unwrap_or("").to_owned();
+    let repo = parts.next().unwrap_or("").to_owned();
+    Ok((owner, repo))
 }
 
 fn get_tag_prefix() -> String {
-    env::var(TAG_PREFIX).unwrap_or("v".to_string())
+    env::var(TAG_PREFIX).unwrap_or_else(|_| "v".to_string())
 }
 
 fn get_github_host() -> String {
-    env::var(GITHUB_HOST).unwrap_or("https://api.github.com".to_string())
+    env::var(GITHUB_HOST).unwrap_or_else(|_| "https://api.github.com".to_string())
 }
 
-fn get_commitish() -> String {
-    env::var(COMMITISH).unwrap_or_else(|e| {
-        eprintln!("Could not read {}", COMMITISH);
-        eprintln!("Error {}", e);
-        exit(1);
-    })
+fn get_commitish() -> Result<String, ActionError> {
+    require_env(COMMITISH)
 }
 
 fn get_body() -> String {
     env::var(BODY).unwrap_or_default()
 }
 
-fn get_generate_release_notes() -> bool {
-    env::var(GENERATE_RELEASE_NOTES).map_or_else(
-        |e| {
-            eprintln!("Could not read {}", GENERATE_RELEASE_NOTES);
-            eprintln!("Error {}", e);
-            exit(1);
-        },
-        |v| matches!(v.to_ascii_lowercase().as_str(), "true"),
-    )
+fn get_generate_release_notes() -> Result<bool, ActionError> {
+    let v = require_env(GENERATE_RELEASE_NOTES)?;
+    Ok(matches!(v.to_ascii_lowercase().as_str(), "true"))
 }
 
-fn is_dry_run() -> bool {
-    env::var(DRY_RUN).map_or_else(
-        |e| {
-            eprintln!("Could not read {}", DRY_RUN);
-            eprintln!("Error {}", e);
-            exit(1);
-        },
-        |v| matches!(v.to_ascii_lowercase().as_str(), "true"),
-    )
+fn is_dry_run() -> Result<bool, ActionError> {
+    let v = require_env(DRY_RUN)?;
+    Ok(matches!(v.to_ascii_lowercase().as_str(), "true"))
 }
