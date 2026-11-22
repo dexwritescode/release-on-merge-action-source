@@ -43,3 +43,12 @@ jobs:
       run: |
           echo "version ${{ steps.release.outputs.version }}"
           echo "tag ${{ steps.release.outputs.tag }}"
+
+    # version-files against this repo's own Cargo.toml; only a push to main has a merged PR
+    - name: Release on merge action with version-files
+      if: github.event_name == 'push'
+      uses: ./
+      with:
+        dry-run: true
+        use-label-strategy: true
+        version-files: cargo

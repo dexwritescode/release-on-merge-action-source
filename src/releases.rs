@@ -19,9 +19,14 @@ impl<C: GithubApi> Releases<'_, C> {
     }
 
     pub fn create_release(&self, tag: &Semver) -> Result<Option<TagName>, ActionError> {
+        self.create_release_at(tag, &self.config.commitish)
+    }
+
+    /// The release and its tag on `commitish` instead of the pushed commit.
+    pub fn create_release_at(&self, tag: &Semver, commitish: &str) -> Result<Option<TagName>, ActionError> {
         let req = CreateReleaseRequest {
             tag_name: tag.to_string(),
-            target_commitish: self.config.commitish.clone(),
+            target_commitish: commitish.to_owned(),
             name: tag.to_string(),
             body: self.config.body.clone(),
             draft: false,
@@ -29,6 +34,11 @@ impl<C: GithubApi> Releases<'_, C> {
             generate_release_notes: self.config.generate_release_notes,
         };
         self.client.create_release(&req)
+    }
+
+    #[cfg(test)]
+    pub fn client(&self) -> &C {
+        &self.client
     }
 
     pub fn get_pr_for_commit(&self, sha: &str) -> Result<Option<PullRequest>, ActionError> {
@@ -82,6 +92,7 @@ mod tests {
         fn with_pr_labels(mut self, labels: &[&str]) -> Self {
             self.pr_response = Ok(Some(PullRequest {
                 labels: labels.iter().map(|n| Label { name: n.to_string() }).collect(),
+                merged_at: Some("2026-11-22T00:00:00Z".to_string()),
             }));
             self
         }
@@ -123,6 +134,8 @@ mod tests {
             label_minor: "release:minor".to_string(),
             label_patch: "release:patch".to_string(),
             label_skip: "release:skip".to_string(),
+            version_files: None,
+            branch: "main".to_string(),
         }
     }
 

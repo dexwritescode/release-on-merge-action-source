@@ -12,6 +12,7 @@ use semver::{Semver, VersionIncrementStrategy};
 pub mod releases;
 use releases::Releases;
 pub mod writer;
+pub mod version_files;
 
 fn resolve_label_strategy(pr: &PullRequest, config: &Config) -> VersionIncrementStrategy {
     let names: Vec<&str> = pr.labels.iter().map(|l| l.name.as_str()).collect();
@@ -35,9 +36,26 @@ fn run() -> Result<(), ActionError> {
     let github_client = GithubClient::new(&config);
     let releases = Releases::new(&config, github_client);
 
-    let strategy = if config.use_label_strategy {
-        let pr = releases.get_pr_for_commit(&config.commitish)?;
+    let pr = if config.use_label_strategy || config.version_files.is_some() {
+        let mut pr = releases.get_pr_for_commit(&config.commitish)?;
+        if pr.is_none() && config.version_files.is_some() {
+            // The PR can show up on its merge commit a moment late.
+            std::thread::sleep(std::time::Duration::from_secs(5));
+            pr = releases.get_pr_for_commit(&config.commitish)?;
+        }
         eprintln!("PR for commit: {:?}", &pr);
+        pr
+    } else {
+        None
+    };
+
+    // With version-files only merged PRs release, so the action's own commits never do.
+    if config.version_files.is_some() && !pr.as_ref().is_some_and(|p| p.merged_at.is_some()) {
+        println!("::warning::No merged PR for {} — skipping release", config.commitish);
+        return Ok(());
+    }
+
+    let strategy = if config.use_label_strategy {
         pr.map(|p| resolve_label_strategy(&p, &config))
             .unwrap_or_else(|| config.increment_strategy.clone())
     } else {
@@ -78,7 +96,10 @@ fn run() -> Result<(), ActionError> {
     };
     eprintln!("New version: {}", &new_tag);
 
-    if config.dry_run {
+    if let Some(files) = &config.version_files {
+        let git = GithubClient::new(&config);
+        version_files::release(files, &config.branch, &new_tag, config.dry_run, &releases, &git)?;
+    } else if config.dry_run {
         eprintln!("Dry run mode active. Not creating a new release.");
     } else {
         eprintln!("Creating new release.");
@@ -127,12 +148,15 @@ mod tests {
             label_minor: "release:minor".to_string(),
             label_patch: "release:patch".to_string(),
             label_skip: "release:skip".to_string(),
+            version_files: None,
+            branch: "main".to_string(),
         }
     }
 
     fn pr_with(labels: &[&str]) -> PullRequest {
         PullRequest {
             labels: labels.iter().map(|n| Label { name: n.to_string() }).collect(),
+            merged_at: Some("2026-11-22T00:00:00Z".to_string()),
         }
     }
 

@@ -2,6 +2,7 @@ use std::{env, fmt, str::FromStr};
 
 use crate::error::ActionError;
 use crate::semver::VersionIncrementStrategy;
+use crate::version_files::VersionFiles;
 
 const INITIAL_VERSION: &str = "INPUT_INITIAL-VERSION";
 const GITHUB_REPOSITORY: &str = "GITHUB_REPOSITORY";
@@ -21,6 +22,8 @@ const LABEL_MAJOR: &str = "INPUT_LABEL-MAJOR";
 const LABEL_MINOR: &str = "INPUT_LABEL-MINOR";
 const LABEL_PATCH: &str = "INPUT_LABEL-PATCH";
 const LABEL_SKIP: &str = "INPUT_LABEL-SKIP";
+const VERSION_FILES: &str = "INPUT_VERSION-FILES";
+const BRANCH: &str = "GITHUB_REF_NAME";
 
 #[derive(Debug)]
 pub struct Config {
@@ -43,6 +46,10 @@ pub struct Config {
     pub label_minor: String,
     pub label_patch: String,
     pub label_skip: String,
+    /// Where the version lives in the repository; None tags only.
+    pub version_files: Option<VersionFiles>,
+    /// The branch the workflow runs on (the one version-files commits to).
+    pub branch: String,
 }
 
 pub struct Token(pub String);
@@ -56,6 +63,15 @@ impl fmt::Debug for Token {
 impl Config {
     pub fn new() -> Result<Config, ActionError> {
         let (owner, repo) = get_repo_info()?;
+        let version_files = get_version_files()?;
+        let prerelease = get_prerelease();
+        if version_files.is_some() && prerelease {
+            return Err(ActionError::Unsupported("version-files with prerelease".to_owned()));
+        }
+        let branch = env::var(BRANCH).unwrap_or_default();
+        if version_files.is_some() && branch.is_empty() {
+            return Err(ActionError::MissingEnv(BRANCH));
+        }
         Ok(Config {
             github_output_path: get_github_output_path()?,
             github_token: Token(get_github_token()?),
@@ -69,13 +85,15 @@ impl Config {
             body: get_body(),
             generate_release_notes: get_generate_release_notes()?,
             dry_run: is_dry_run()?,
-            prerelease: get_prerelease(),
+            prerelease,
             prerelease_identifier: get_prerelease_identifier(),
             use_label_strategy: get_use_label_strategy(),
             label_major: get_label(LABEL_MAJOR, "release:major"),
             label_minor: get_label(LABEL_MINOR, "release:minor"),
             label_patch: get_label(LABEL_PATCH, "release:patch"),
             label_skip: get_label(LABEL_SKIP, "release:skip"),
+            version_files,
+            branch,
         })
     }
 
@@ -152,6 +170,14 @@ fn get_use_label_strategy() -> bool {
     env::var(USE_LABEL_STRATEGY).map_or(false, |v| matches!(v.to_ascii_lowercase().as_str(), "true"))
 }
 
+/// Unset or empty means no version files.
+fn get_version_files() -> Result<Option<VersionFiles>, ActionError> {
+    match env::var(VERSION_FILES) {
+        Ok(v) if !v.trim().is_empty() => v.parse().map(Some),
+        _ => Ok(None),
+    }
+}
+
 fn get_label(var: &'static str, default: &str) -> String {
     env::var(var).unwrap_or_else(|_| default.to_string())
 }
@@ -186,6 +212,9 @@ mod tests {
             "INPUT_TAG-PREFIX",
             "INPUT_BODY",
             "INPUT_GITHUB-HOST",
+            "INPUT_VERSION-FILES",
+            "INPUT_PRERELEASE",
+            "GITHUB_REF_NAME",
         ] {
             std::env::remove_var(var);
         }
@@ -256,6 +285,46 @@ mod tests {
         std::env::set_var("INPUT_DRY-RUN", "true");
         let config = Config::new().unwrap();
         assert!(config.dry_run);
+        clear_env();
+    }
+
+    #[test]
+    fn config_without_version_files_is_none() {
+        let _lock = ENV_LOCK.lock().unwrap();
+        set_required_env();
+        std::env::set_var("INPUT_VERSION-FILES", "");
+        assert_eq!(Config::new().unwrap().version_files, None);
+        clear_env();
+    }
+
+    #[test]
+    fn config_reads_version_files_and_branch() {
+        let _lock = ENV_LOCK.lock().unwrap();
+        set_required_env();
+        std::env::set_var("INPUT_VERSION-FILES", "cargo");
+        std::env::set_var("GITHUB_REF_NAME", "main");
+        let config = Config::new().unwrap();
+        assert_eq!(config.version_files, Some(VersionFiles::Cargo));
+        assert_eq!(config.branch, "main");
+        clear_env();
+    }
+
+    #[test]
+    fn config_rejects_version_files_with_prerelease() {
+        let _lock = ENV_LOCK.lock().unwrap();
+        set_required_env();
+        std::env::set_var("INPUT_VERSION-FILES", "cargo");
+        std::env::set_var("INPUT_PRERELEASE", "true");
+        assert!(matches!(Config::new().unwrap_err(), ActionError::Unsupported(_)));
+        clear_env();
+    }
+
+    #[test]
+    fn config_rejects_unknown_version_files() {
+        let _lock = ENV_LOCK.lock().unwrap();
+        set_required_env();
+        std::env::set_var("INPUT_VERSION-FILES", "npm");
+        assert!(matches!(Config::new().unwrap_err(), ActionError::VersionFiles(_)));
         clear_env();
     }
 }
