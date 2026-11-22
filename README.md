@@ -14,6 +14,8 @@ A Rust binary packaged as a Docker-based GitHub Action that creates a GitHub rel
 4. Increments the semver tag (stable or pre-release)
 5. Creates a new GitHub release and writes `version` / `tag` outputs
 
+With `version-files`, step 5 instead commits the release version to the files (the tag points at that commit), then the next snapshot (patch + 1, `-dev`), and fast-forwards the branch through the git data API. Pushes without a merged PR are skipped. See `src/version_files.rs`.
+
 ## Inputs
 
 | Input | Default | Description |
@@ -32,6 +34,7 @@ A Rust binary packaged as a Docker-based GitHub Action that creates a GitHub rel
 | `label-minor` | `release:minor` | Label that triggers a minor bump |
 | `label-patch` | `release:patch` | Label that triggers a patch bump |
 | `label-skip` | `release:skip` | Label that skips release creation |
+| `version-files` | `''` | `cargo` or `file:PATH`: commit the release and next snapshot versions to the branch |
 
 ## Outputs
 
@@ -44,7 +47,7 @@ A Rust binary packaged as a Docker-based GitHub Action that creates a GitHub rel
 
 ```bash
 cargo build --release   # build
-cargo test              # run all tests (31 tests)
+cargo test              # run all tests
 cargo clippy            # lint
 ```
 

@@ -8,6 +8,8 @@ pub enum ActionError {
     Unauthorized,
     ApiError(String),
     UnexpectedStatus(u16),
+    VersionFiles(String),
+    Unsupported(String),
 }
 
 impl fmt::Display for ActionError {
@@ -19,6 +21,8 @@ impl fmt::Display for ActionError {
             ActionError::Unauthorized => write!(f, "Unauthorized — check your GITHUB_TOKEN"),
             ActionError::ApiError(msg) => write!(f, "GitHub API error: {msg}"),
             ActionError::UnexpectedStatus(code) => write!(f, "Unexpected HTTP status: {code}"),
+            ActionError::VersionFiles(msg) => write!(f, "version-files: {msg}"),
+            ActionError::Unsupported(msg) => write!(f, "Not supported: {msg}"),
         }
     }
 }

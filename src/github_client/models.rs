@@ -25,4 +25,7 @@ pub struct Label {
 #[derive(Deserialize, Debug, Clone)]
 pub struct PullRequest {
     pub labels: Vec<Label>,
+    /// When the PR was merged; None while it's open.
+    #[serde(default)]
+    pub merged_at: Option<String>,
 }
