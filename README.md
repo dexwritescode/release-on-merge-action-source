@@ -16,6 +16,8 @@ A Rust binary packaged as a Docker-based GitHub Action that creates a GitHub rel
 
 With `version-files`, step 5 instead commits the release version to the files (the tag points at that commit), then the next snapshot (patch + 1, `-dev`), and fast-forwards the branch through the git data API. Pushes without a merged PR are skipped. See `src/version_files.rs`.
 
+Runs started by `schedule` or `workflow_dispatch` aren't tied to a PR, so they ignore labels: they release with `version-increment-strategy` if anything merged since the latest release, and otherwise skip.
+
 ## Inputs
 
 | Input | Default | Description |

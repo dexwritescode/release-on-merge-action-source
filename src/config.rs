@@ -24,6 +24,7 @@ const LABEL_PATCH: &str = "INPUT_LABEL-PATCH";
 const LABEL_SKIP: &str = "INPUT_LABEL-SKIP";
 const VERSION_FILES: &str = "INPUT_VERSION-FILES";
 const BRANCH: &str = "GITHUB_REF_NAME";
+const EVENT_NAME: &str = "GITHUB_EVENT_NAME";
 
 #[derive(Debug)]
 pub struct Config {
@@ -50,6 +51,8 @@ pub struct Config {
     pub version_files: Option<VersionFiles>,
     /// The branch the workflow runs on (the one version-files commits to).
     pub branch: String,
+    /// Started by a schedule or by hand, not by a merge: releases if anything changed.
+    pub scheduled: bool,
 }
 
 pub struct Token(pub String);
@@ -94,6 +97,7 @@ impl Config {
             label_skip: get_label(LABEL_SKIP, "release:skip"),
             version_files,
             branch,
+            scheduled: is_scheduled(),
         })
     }
 
@@ -182,6 +186,10 @@ fn get_label(var: &'static str, default: &str) -> String {
     env::var(var).unwrap_or_else(|_| default.to_string())
 }
 
+fn is_scheduled() -> bool {
+    matches!(env::var(EVENT_NAME).as_deref(), Ok("schedule" | "workflow_dispatch"))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -215,6 +223,7 @@ mod tests {
             "INPUT_VERSION-FILES",
             "INPUT_PRERELEASE",
             "GITHUB_REF_NAME",
+            "GITHUB_EVENT_NAME",
         ] {
             std::env::remove_var(var);
         }
@@ -325,6 +334,19 @@ mod tests {
         set_required_env();
         std::env::set_var("INPUT_VERSION-FILES", "npm");
         assert!(matches!(Config::new().unwrap_err(), ActionError::VersionFiles(_)));
+        clear_env();
+    }
+
+    #[test]
+    fn config_scheduled_only_for_schedule_and_dispatch() {
+        let _lock = ENV_LOCK.lock().unwrap();
+        set_required_env();
+        for (event, scheduled) in [("schedule", true), ("workflow_dispatch", true), ("push", false)] {
+            std::env::set_var("GITHUB_EVENT_NAME", event);
+            assert_eq!(Config::new().unwrap().scheduled, scheduled, "{event}");
+        }
+        std::env::remove_var("GITHUB_EVENT_NAME");
+        assert!(!Config::new().unwrap().scheduled);
         clear_env();
     }
 }

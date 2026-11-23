@@ -36,7 +36,8 @@ fn run() -> Result<(), ActionError> {
     let github_client = GithubClient::new(&config);
     let releases = Releases::new(&config, github_client);
 
-    let pr = if config.use_label_strategy || config.version_files.is_some() {
+    // A scheduled run has no PR: it uses version-increment-strategy.
+    let pr = if !config.scheduled && (config.use_label_strategy || config.version_files.is_some()) {
         let mut pr = releases.get_pr_for_commit(&config.commitish)?;
         if pr.is_none() && config.version_files.is_some() {
             // The PR can show up on its merge commit a moment late.
@@ -50,7 +51,7 @@ fn run() -> Result<(), ActionError> {
     };
 
     // With version-files only merged PRs release, so the action's own commits never do.
-    if config.version_files.is_some() && !pr.as_ref().is_some_and(|p| p.merged_at.is_some()) {
+    if !config.scheduled && config.version_files.is_some() && !pr.as_ref().is_some_and(|p| p.merged_at.is_some()) {
         println!("::warning::No merged PR for {} — skipping release", config.commitish);
         return Ok(());
     }
@@ -70,6 +71,13 @@ fn run() -> Result<(), ActionError> {
 
     let latest_release = releases.get_latest_release()?;
     eprintln!("Retrieved release {:?}", &latest_release);
+
+    if let Some(latest) = latest_release.as_ref().filter(|_| config.scheduled) {
+        if !releases.has_changes_since(&latest.tag_name)? {
+            eprintln!("Nothing since {} — skipping release", latest.tag_name);
+            return Ok(());
+        }
+    }
 
     let default_tag = Semver::from_str(&config.get_default_tag())
         .map_err(|_| ActionError::InvalidTag(config.get_default_tag()))?;
@@ -150,6 +158,7 @@ mod tests {
             label_skip: "release:skip".to_string(),
             version_files: None,
             branch: "main".to_string(),
+            scheduled: false,
         }
     }
 
