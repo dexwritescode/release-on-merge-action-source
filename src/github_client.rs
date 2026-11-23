@@ -1,4 +1,4 @@
-use self::models::{CreateReleaseRequest, PullRequest, TagName};
+use self::models::{Comparison, CreateReleaseRequest, PullRequest, TagName};
 use crate::error::ActionError;
 use crate::version_files::FileEdit;
 use crate::Config;
@@ -13,6 +13,8 @@ pub trait GithubApi {
     fn get_latest_release(&self) -> Result<Option<TagName>, ActionError>;
     fn create_release(&self, request: &CreateReleaseRequest) -> Result<Option<TagName>, ActionError>;
     fn get_pr_for_commit(&self, sha: &str) -> Result<Option<PullRequest>, ActionError>;
+    /// The messages of the commits in `head` that aren't in `base` (at most 250).
+    fn get_commit_messages(&self, base: &str, head: &str) -> Result<Vec<String>, ActionError>;
 }
 
 /// The git data calls version-files needs: read the branch, write commits, move the branch.
@@ -129,6 +131,16 @@ impl GithubApi for GithubClient {
             StatusCode::UNAUTHORIZED => Err(ActionError::Unauthorized),
             s => Err(ActionError::UnexpectedStatus(s.as_u16())),
         }
+    }
+
+    // GET /repos/{owner}/{repo}/compare/{base}...{head}
+    fn get_commit_messages(&self, base: &str, head: &str) -> Result<Vec<String>, ActionError> {
+        let value = self
+            .json(self.client.get(self.url(&format!("compare/{base}...{head}"))))?
+            .ok_or_else(|| ActionError::ApiError(format!("can't compare {base}...{head}")))?;
+        let comparison: Comparison =
+            serde_json::from_value(value).map_err(|e| ActionError::ApiError(e.to_string()))?;
+        Ok(comparison.commits.into_iter().map(|c| c.commit.message).collect())
     }
 }
 

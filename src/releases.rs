@@ -4,6 +4,9 @@ use crate::github_client::GithubApi;
 use crate::Config;
 use crate::Semver;
 
+/// How the commit that moves the branch to the next snapshot starts.
+pub const SNAPSHOT_COMMIT: &str = "Next development version";
+
 pub struct Releases<'config, C: GithubApi> {
     config: &'config Config,
     client: C,
@@ -44,6 +47,12 @@ impl<C: GithubApi> Releases<'_, C> {
     pub fn get_pr_for_commit(&self, sha: &str) -> Result<Option<PullRequest>, ActionError> {
         self.client.get_pr_for_commit(sha)
     }
+
+    /// Whether the run's commit has anything after `tag` besides the action's own snapshot commit.
+    pub fn has_changes_since(&self, tag: &str) -> Result<bool, ActionError> {
+        let messages = self.client.get_commit_messages(tag, &self.config.commitish)?;
+        Ok(messages.iter().any(|m| !m.starts_with(SNAPSHOT_COMMIT)))
+    }
 }
 
 #[cfg(test)]
@@ -59,6 +68,7 @@ mod tests {
         captured_request: RefCell<Option<CreateReleaseRequest>>,
         create_response: Result<Option<TagName>, ActionError>,
         pr_response: Result<Option<PullRequest>, ActionError>,
+        messages: Vec<String>,
     }
 
     impl MockGithubApi {
@@ -68,6 +78,7 @@ mod tests {
                 captured_request: RefCell::new(None),
                 create_response: Ok(Some(TagName { tag_name: tag.to_string() })),
                 pr_response: Ok(None),
+                messages: vec![],
             }
         }
 
@@ -77,6 +88,7 @@ mod tests {
                 captured_request: RefCell::new(None),
                 create_response: Ok(Some(TagName { tag_name: "v0.1.0".to_string() })),
                 pr_response: Ok(None),
+                messages: vec![],
             }
         }
 
@@ -86,7 +98,13 @@ mod tests {
                 captured_request: RefCell::new(None),
                 create_response: Err(err),
                 pr_response: Ok(None),
+                messages: vec![],
             }
+        }
+
+        fn with_commits(mut self, messages: &[&str]) -> Self {
+            self.messages = messages.iter().map(|m| m.to_string()).collect();
+            self
         }
 
         fn with_pr_labels(mut self, labels: &[&str]) -> Self {
@@ -110,6 +128,10 @@ mod tests {
 
         fn get_pr_for_commit(&self, _sha: &str) -> Result<Option<PullRequest>, ActionError> {
             self.pr_response.clone()
+        }
+
+        fn get_commit_messages(&self, _base: &str, _head: &str) -> Result<Vec<String>, ActionError> {
+            Ok(self.messages.clone())
         }
     }
 
@@ -136,6 +158,7 @@ mod tests {
             label_skip: "release:skip".to_string(),
             version_files: None,
             branch: "main".to_string(),
+            scheduled: false,
         }
     }
 
@@ -208,5 +231,37 @@ mod tests {
         let config = test_config();
         let releases = Releases::new(&config, MockGithubApi::with_no_release());
         assert!(releases.get_pr_for_commit("abc123").unwrap().is_none());
+    }
+
+    #[test]
+    fn no_commits_since_the_tag_is_no_change() {
+        let config = test_config();
+        let releases = Releases::new(&config, MockGithubApi::with_no_release());
+        assert!(!releases.has_changes_since("v1.0.0").unwrap());
+    }
+
+    #[test]
+    fn only_the_snapshot_commit_is_no_change() {
+        let config = test_config();
+        let mock = MockGithubApi::with_no_release().with_commits(&["Next development version 1.0.1-dev"]);
+        let releases = Releases::new(&config, mock);
+        assert!(!releases.has_changes_since("v1.0.0").unwrap());
+    }
+
+    #[test]
+    fn a_release_commit_is_a_change() {
+        let config = test_config();
+        let mock = MockGithubApi::with_no_release().with_commits(&["Release v1.0.1"]);
+        let releases = Releases::new(&config, mock);
+        assert!(releases.has_changes_since("v1.0.0").unwrap());
+    }
+
+    #[test]
+    fn a_merged_commit_is_a_change() {
+        let config = test_config();
+        let mock = MockGithubApi::with_no_release()
+            .with_commits(&["Next development version 1.0.1-dev", "Merge pull request #7"]);
+        let releases = Releases::new(&config, mock);
+        assert!(releases.has_changes_since("v1.0.0").unwrap());
     }
 }

@@ -11,7 +11,7 @@ use toml_edit::{DocumentMut, Item, Value};
 
 use crate::error::ActionError;
 use crate::github_client::{GitApi, GithubApi};
-use crate::releases::Releases;
+use crate::releases::{Releases, SNAPSHOT_COMMIT};
 use crate::semver::Semver;
 
 /// Where the version lives.
@@ -294,7 +294,7 @@ pub fn release<C: GithubApi, G: GitApi>(
         let release_commit = git.create_commit(&format!("Release {release}"), &release_tree, &head)?;
         let snapshot_tree = git.create_tree(&release_tree, &snapshot_edits)?;
         let snapshot_commit =
-            git.create_commit(&format!("Next development version {snapshot}"), &snapshot_tree, &release_commit)?;
+            git.create_commit(&format!("{SNAPSHOT_COMMIT} {snapshot}"), &snapshot_tree, &release_commit)?;
 
         let moved = match git.update_branch(branch, &snapshot_commit) {
             Ok(()) => true,
@@ -570,6 +570,9 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
         fn get_pr_for_commit(&self, _sha: &str) -> Result<Option<PullRequest>, ActionError> {
             Ok(None)
         }
+        fn get_commit_messages(&self, _base: &str, _head: &str) -> Result<Vec<String>, ActionError> {
+            Ok(vec![])
+        }
     }
 
     fn config() -> Config {
@@ -595,6 +598,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
             label_skip: "release:skip".to_string(),
             version_files: Some(VersionFiles::File("VERSION".into())),
             branch: "main".to_string(),
+            scheduled: false,
         }
     }
 
